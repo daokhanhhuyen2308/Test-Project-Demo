@@ -1,7 +1,7 @@
 package com.example.demo.service;
 
-import com.example.demo.dto.EmailDetail;
+import com.example.demo.dto.EmailDetailRequest;
 
 public interface EmailService {
-    void sendEmail(EmailDetail detail);
+    void sendEmail(EmailDetailRequest detail);
 }

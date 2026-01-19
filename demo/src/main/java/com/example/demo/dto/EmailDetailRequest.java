@@ -8,7 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class EmailDetail {
+public class EmailDetailRequest {
     private String recipient;
     private String msgBody;
     private String subject;

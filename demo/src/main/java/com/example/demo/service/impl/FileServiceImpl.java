@@ -1,12 +1,15 @@
 package com.example.demo.service.impl;
 
-import com.example.demo.dto.EmailDetail;
+import com.example.demo.dto.EmailDetailRequest;
+import com.example.demo.dto.EmailTaskDTO;
 import com.example.demo.dto.FileDownloadDTO;
 import com.example.demo.dto.FileResponse;
 import com.example.demo.entity.FileEntity;
+import com.example.demo.enums.StatusSendEmail;
+import com.example.demo.exception.CustomExceptionHandler;
 import com.example.demo.mapper.FileMapper;
 import com.example.demo.repository.FileRepository;
-import com.example.demo.service.EmailService;
+import com.example.demo.service.EmailTaskRedisService;
 import com.example.demo.service.FileService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -28,7 +31,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
     private final FileRepository fileRepository;
-    private final EmailService emailService;
+    private final EmailTaskRedisService emailTaskRedisService;
 
     @Value("${app.upload.directory}")
     private String uploadDictionary;
@@ -40,7 +43,7 @@ public class FileServiceImpl implements FileService {
     public FileResponse uploadFile(MultipartFile file, String recipient) {
         if (file.isEmpty()){
             logger.warn("File is empty. Please check method again!");
-            throw new RuntimeException("File is not empty. Please choose any files!");
+            throw CustomExceptionHandler.badRequestException("File is not empty. Please choose any files!");
         }
 
         try{
@@ -56,24 +59,25 @@ public class FileServiceImpl implements FileService {
 
             fileRepository.save(entity);
 
-            String htmlContent = """
-                <h3>Chúc mừng!</h3>
-                <p>Ảnh của bạn đã được lưu trữ thành công trên hệ thống.</p>
-                <p>Cảm ơn bạn đã sử dụng dịch vụ!</p>
-                """;
-
-                    EmailDetail emailDetail = EmailDetail.builder()
-                    .msgBody(htmlContent)
+            EmailDetailRequest request = EmailDetailRequest.builder()
                     .recipient(recipient)
-                            .subject("Upload file")
+                    .subject("Upload File")
                     .build();
 
-            emailService.sendEmail(emailDetail);
+            EmailTaskDTO emailTaskDTO = EmailTaskDTO.builder()
+                    .status(StatusSendEmail.EMAIL_PENDING)
+                    .retryCount(0)
+                    .maxRetryCount(3)
+//                    .nextRetryAt(Instant.now().plusSeconds(300))
+                    .request(request)
+                    .build();
+
+            emailTaskRedisService.save(emailTaskDTO);
 
             return FileMapper.mapToFileResponse(entity);
 
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw CustomExceptionHandler.badRequestException("");
         }
 
     }
@@ -87,7 +91,7 @@ public class FileServiceImpl implements FileService {
             Resource resource = new UrlResource(path.toUri());
 
             if (!resource.exists() && !resource.isReadable()){
-                throw new RuntimeException("File is error!");
+                throw CustomExceptionHandler.badRequestException("File is error!");
             }
 
             return new FileDownloadDTO(

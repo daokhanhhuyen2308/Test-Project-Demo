@@ -1,13 +1,14 @@
 package com.example.demo.service.impl;
 
-import com.example.demo.dto.EmailDetail;
+import com.example.demo.dto.EmailDetailRequest;
 import com.example.demo.service.EmailService;
+import jakarta.mail.internet.MimeMessage;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -21,17 +22,20 @@ public class EmailServiceImpl implements EmailService {
 
     private static final Logger logger = LoggerFactory.getLogger(EmailServiceImpl.class);
     @Override
-    public void sendEmail(EmailDetail detail) {
+    public void sendEmail(EmailDetailRequest detail) {
 
         try {
-            SimpleMailMessage mailMessage
-                    = new SimpleMailMessage();
+            MimeMessage mailMessage
+                    = javaMailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(mailMessage, "UTF-8");
 
-            // Setting up necessary details
-            mailMessage.setFrom(sender);
-            mailMessage.setTo(detail.getRecipient());
-            mailMessage.setText(detail.getMsgBody());
-            mailMessage.setSubject(detail.getSubject());
+            String htmlMsg = "<h3>Welcome!</h3>"
+                    + "<p>You have uploaded the file successfully.</p>";
+
+            helper.setFrom(sender);
+            helper.setTo(detail.getRecipient());
+            helper.setText(htmlMsg, true);
+            helper.setSubject(detail.getSubject());
 
             // Sending the mail
             javaMailSender.send(mailMessage);
