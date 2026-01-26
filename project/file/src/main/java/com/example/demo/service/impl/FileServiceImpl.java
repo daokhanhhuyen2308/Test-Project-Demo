@@ -56,7 +56,7 @@ public class FileServiceImpl implements FileService {
             }
             String uniqueFileName = UUID.randomUUID() + extension;
 
-            FileEntity entity = getFileEntity(file, rootLocation, uniqueFileName);
+            FileEntity entity = getFileEntity(file, rootLocation, uniqueFileName, recipient);
 
             fileRepository.save(entity);
 
@@ -107,7 +107,7 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-    private static FileEntity getFileEntity(MultipartFile file, Path rootLocation, String uniqueFileName) {
+    private static FileEntity getFileEntity(MultipartFile file, Path rootLocation, String uniqueFileName, String recipient) {
         Path destinationFile = rootLocation.resolve(uniqueFileName);
 
         String contentType = file.getContentType();
@@ -121,6 +121,7 @@ public class FileServiceImpl implements FileService {
         entity.setFileName(uniqueFileName);
         entity.setContentType(file.getContentType());
         entity.setViewable(isViewable);
+        entity.setOwnerId(recipient);
         return entity;
     }
 

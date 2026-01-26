@@ -2,6 +2,7 @@ package com.example.demo.config;
 
 import com.example.demo.exception.CustomAccessDeniedHandler;
 import com.example.demo.exception.CustomAuthenticationEntryPoint;
+import com.example.demo.utils.Endpoints;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,7 +35,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(
                         auth ->
-                                auth.requestMatchers("/api/file/export/", "/api/file/upload")
+                                auth.requestMatchers("/api/file/upload", "/api/file/export/{fileId}")
                                         .authenticated());
         httpSecurity.oauth2ResourceServer(
                 oauth2 ->

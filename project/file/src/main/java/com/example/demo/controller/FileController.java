@@ -9,8 +9,12 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/file")
@@ -23,8 +27,9 @@ public class FileController {
     }
 
     @PostMapping("/upload")
-    public ResponseEntity<?> uploadFile(@RequestParam MultipartFile file,
-                                        @Email(message = "Invalid recipient email") @RequestParam String recipient){
+    public ResponseEntity<?> uploadFile(@RequestParam MultipartFile file){
+
+        String recipient = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
 
         if (file.isEmpty()){
             throw CustomExceptionHandler.badRequestException("File is not empty. Please choose any files!");

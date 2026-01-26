@@ -10,7 +10,7 @@ import java.util.Optional;
 
 @Repository
 public interface UserRepository extends JpaRepository<UserEntity, String> {
-    UserEntity findByEmail(String email);
+    Optional<UserEntity> findByEmail(String email);
     @Query("select distinct u from UserEntity u inner join u.roles r where r.name = :name")
     Optional<UserEntity> findUserByRoleName(@Param("name") String name);
 }

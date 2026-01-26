@@ -28,11 +28,6 @@ public class EmailTaskRedisService {
         redisTemplate.opsForValue().set(buildKey(emailTaskDTO.getId()), emailTaskDTO);
     }
 
-    public EmailTaskDTO getByTaskId(String taskId){
-        Object obj = redisTemplate.opsForValue().get(buildKey(taskId));
-        return obj == null ? null : (EmailTaskDTO) obj;
-    }
-
     public void update(EmailTaskDTO task){
         redisTemplate.opsForValue().set(
                 buildKey(task.getId()),

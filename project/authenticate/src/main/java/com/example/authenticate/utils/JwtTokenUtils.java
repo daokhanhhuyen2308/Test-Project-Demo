@@ -67,8 +67,6 @@ public class JwtTokenUtils {
 
         String id = signedJWT.getJWTClaimsSet().getSubject();
 
-        String jwtId = signedJWT.getJWTClaimsSet().getJWTID();
-
         if (!signedJWT.verify(verifier) || expiryToken.after(new Date()) || !userRepository.existsById(id)){
             throw CustomExceptionHandler.unAuthorizeException("You can't access this endpoint because the token is invalid!"
                     + "\n"

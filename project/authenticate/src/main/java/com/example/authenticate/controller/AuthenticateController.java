@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import reactor.core.publisher.Mono;
 
 import java.text.ParseException;
 
@@ -23,7 +24,7 @@ public class AuthenticateController {
     private final AuthenticateService authenticateService;
 
     @PostMapping("/token")
-    public ApiResponse<AuthenticationResponse> authenticate(@Valid @RequestBody LoginRequest request){
+    public Mono<ApiResponse<AuthenticationResponse>> authenticate(@Valid @RequestBody LoginRequest request){
         return authenticateService.authenticate(request);
     }
 
