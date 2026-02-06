@@ -14,8 +14,7 @@ spring:
               uri:
                 http://localhost:8082
               predicates:
-                - args:
-                    Path=/api/files/**
+                - Path=/api/files/**
 
 server:
   port: 8888

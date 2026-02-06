@@ -1,9 +1,9 @@
 package com.august.gateway.service;
 
 import com.august.gateway.dto.requests.IntrospectRequest;
-import com.august.gateway.dto.responses.ApiResponse;
 import com.august.gateway.dto.responses.IntrospectResponse;
 import com.august.gateway.httpClient.AuthenticationHttpClient;
+import com.august.shared.dto.ApiResponse;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 

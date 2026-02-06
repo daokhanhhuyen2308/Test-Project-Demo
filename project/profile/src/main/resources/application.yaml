@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: profile
+  datasource:
+    url: ${SPRING_MYSQL_URI}
+    username: ${SPRING_MYSQL_USERNAME}
+    password: ${SPRING_MYSQL_PASSWORD}
+    driver-class-name: com.mysql.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: {SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
+server:
+  port: 8083
+
+grpc:
+  server:
+    address: 9091
+

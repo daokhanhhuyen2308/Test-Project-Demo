@@ -1,0 +1,219 @@
+version: "3.9"
+
+services:
+  # --- BỔ SUNG MYSQL ---
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: authenticate
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- BỔ SUNG MONGODB ---
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: 12345
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - app-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Keycloak
+  keycloak:
+    image: quay.io/keycloak/keycloak:latest
+    container_name: keycloak
+    ports:
+      - "8080:8080"
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+    command: start-dev
+    networks:
+      - app-network
+
+#  ElasticSearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    networks:
+      - app-network
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.1
+    container_name: kibana
+    ports:
+      - "5601:5601"
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    depends_on:
+      - elasticsearch
+    networks:
+      - app-network
+
+  # Application Services
+  authenticate-service:
+    build:
+      context: ../authenticate
+      dockerfile: Dockerfile
+    image: authenticate-service:latest
+    container_name: authenticate-service
+    ports:
+      - "8081:8081"
+    env_file:
+      - ./envs/authenticate-service.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - app-network
+
+  file-service:
+    build:
+      context: ../file
+      dockerfile: Dockerfile
+    image: file-service:latest
+    container_name: file-service
+    ports:
+      - "8082:8082"
+    env_file:
+      - ./envs/file-service.env
+    depends_on:
+       mongodb:
+         condition: service_healthy
+       redis:
+         condition: service_healthy
+       keycloak:
+         condition: service_started
+    networks:
+      - app-network
+
+  profile-service:
+    build:
+      context: ../profile
+      dockerfile: Dockerfile
+    image: profile-service:latest
+    container_name: profile-service
+    ports:
+      - "8083:8083"
+    env_file:
+      - ./envs/authenticate-service.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - app-network
+
+  post-service:
+    build:
+      context: ../post
+      dockerfile: Dockerfile
+    image: post-service:latest
+    container_name: post-service
+    ports:
+      - "8084:8084"
+    env_file:
+      - ./envs/common.env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - app-network
+
+  comment-service:
+    build:
+      context: ../comment
+      dockerfile: Dockerfile
+    image: comment-service:latest
+    container_name: comment-service
+    ports:
+      - "8085:8085"
+    env_file:
+      - ./envs/common.env
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    networks:
+      - app-network
+
+  # Kong API Gateway
+  kong:
+    image: kong:latest
+    container_name: kong
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yaml
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+    volumes:
+      - ./kong/kong.yaml:/etc/kong/kong.yaml:ro
+    depends_on:
+      - keycloak
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  mysql_data:
+  redis_data:

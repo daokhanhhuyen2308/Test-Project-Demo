@@ -1,0 +1,54 @@
+server:
+  port: 8082
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${SPRING_MAIL_USERNAME}
+    password: ${SPRING_MAIL_PASSWORD}
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
+      repositories:
+        enabled: false
+  mongodb:
+    uri: ${SPRING_MONGODB_URI}
+logging:
+  level:
+    org.mongodb.driver: WARN
+    org.mongodb.driver.client: WARN
+    org.springframework.data.mongodb: WARN
+
+
+app:
+  upload:
+    directory: uploads/images
+
+KEY_EMAIL_REDIS_PREFIX: ${KEY_EMAIL_REDIS_PREFIX}
+

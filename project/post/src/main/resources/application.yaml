@@ -1,0 +1,47 @@
+spring:
+  application:
+    name: post
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: {SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
+
+  datasource:
+    password: 12345
+    username: sa
+    driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
+    url: dbc:sqlserver://localhost:1433;databaseName=PostServiceDB;encrypt=true;trustServerCertificate=true;
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  elasticsearch:
+    uris: http://localhost:9200
+    connection-timeout: 5s
+    socket-timeout: 5s
+
+logging:
+  level:
+    sql: error
+    org:
+      hibernate:
+        SQL: DEBUG
+        type:
+        descriptor:
+          sql: TRAC
+server:
+  port: 8084
+
+
+KEY:
+  COMMENT:
+    COUNT: ${SPRING_REDIS_KEY_COMMENT_COUNT}
+  VIEW:
+    COUNT: ${SPRING_REDIS_KEY_VIEW_COUNT}

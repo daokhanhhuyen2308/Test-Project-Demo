@@ -1,12 +1,12 @@
 package com.august.gateway.config;
 
-import com.august.gateway.dto.responses.ApiResponse;
 import com.august.gateway.dto.responses.IntrospectResponse;
-import com.august.gateway.exception.ApiExceptionResponse;
-import com.august.gateway.exception.CustomError;
-import com.august.gateway.exception.CustomExceptionHandler;
 import com.august.gateway.service.AuthenticationService;
 import com.august.gateway.utils.Endpoints;
+import com.august.shared.dto.ApiResponse;
+import com.august.shared.enums.ErrorCode;
+import com.august.shared.exception.AppCustomException;
+import com.august.shared.exception.GlobalExceptionHandler;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -21,6 +21,7 @@ import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
@@ -30,7 +31,6 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -98,8 +98,8 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     private Mono<Void> handleCheckRateLimitAndLoginAttempts(ServerWebExchange exchange){
         return extractEmailFromRequest(exchange)
                 .flatMap(email -> {
-                    String rateLimitRequestKey = "rateLimit:attempt:" + email;
-                    String loginAttemptKey = "login:attempt:" +email;
+                    String rateLimitRequestKey = "RATELIMIT:ATTEMPT:" + email;
+                    String loginAttemptKey = "LOGIN:ATTEMPT:" +email;
 
                     return checkRateLimitAttempts(rateLimitRequestKey, exchange)
                             .then(checkLoginAttempts(loginAttemptKey, exchange));
@@ -146,15 +146,15 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                         String email = jsonNode.get("email").asString();
 
                         if (email == null) {
-                            return Mono.error(CustomExceptionHandler.notFoundException("Email empty in body"));
+                            return Mono.error(new AppCustomException(ErrorCode.EMAIL_IS_EMPTY));
                         }
 
                         return Mono.just(email);
 
                     } catch (Exception e) {
-                        return Mono.error(CustomExceptionHandler.badRequestException("Invalid JSON"));
+                        return Mono.error(new AppCustomException(ErrorCode.JSON_INVALID));
                     }
-                }).switchIfEmpty(Mono.error(CustomExceptionHandler.badRequestException("Body is missing")));
+                }).switchIfEmpty(Mono.error(new AppCustomException(ErrorCode.BODY_IS_BEING_MISSED)));
 
     }
 
@@ -165,25 +165,17 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
     }
 
-    private Mono<Void> handleException(ServerWebExchange exchange, int code, String msg){
-        CustomError customError = CustomError.builder()
-                .code(code)
-                .timestamp(Instant.now())
-                .message(msg)
-                .build();
-
-        ApiExceptionResponse ex = ApiExceptionResponse.builder()
-                .error(customError)
-                .build();
+    private Mono<Void> handleException(ServerWebExchange exchange, ErrorCode errorCode){
+        ResponseEntity<ApiResponse<?>> apiResponse = GlobalExceptionHandler.buildResponse(errorCode);
 
         ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
+        response.setStatusCode(apiResponse.getStatusCode());
         response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
 
         String json;
 
         try {
-            json = objectMapper.writeValueAsString(ex);
+            json = objectMapper.writeValueAsString(apiResponse);
             DataBuffer dataBuffer = response.bufferFactory().wrap(json.getBytes(StandardCharsets.UTF_8));
             return response.writeWith(Mono.just(dataBuffer));
         }
@@ -194,14 +186,14 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> unAuthorize(ServerWebExchange exchange){
-        return handleException(exchange, 403, "Access Denied: You do not have the necessary permissions to perform this action.");
+        return handleException(exchange, ErrorCode.ACCESS_DENIED);
     }
 
     private Mono<Void> tooManyRequest(ServerWebExchange exchange, Duration duration){
         long seconds = duration.getSeconds();
         String msg = "Rate limit exceeded. Please try again in %d seconds." + seconds;
         exchange.getResponse().getHeaders().set("Retry-After", msg);
-        return handleException(exchange, 429, msg);
+        return handleException(exchange, ErrorCode.TOO_MANY_REQUEST);
     }
 
 }

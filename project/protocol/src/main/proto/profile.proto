@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package="com.august.protocol.profile";
+
+package profile;
+
+message CreateProfileRequest{
+  string userId = 1;
+  string username = 2;
+  string email = 3;
+}
+
+message CreateProfileResponse{
+  string profileId = 1;
+  bool message = 2;
+}
+
+service ProfileService{
+  rpc createProfile(CreateProfileRequest) returns (CreateProfileResponse);
+}

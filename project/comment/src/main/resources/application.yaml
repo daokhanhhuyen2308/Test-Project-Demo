@@ -1,0 +1,29 @@
+server:
+  port: 8085
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
+
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
+      repositories:
+        enabled: false
+
+  mongodb:
+    uri: ${SPRING_MONGODB_URI}
+logging:
+  level:
+    org.mongodb.driver: WARN
+    org.mongodb.driver.client: WARN
+    org.springframework.data.mongodb: WARN
+
+KEY:
+  COMMENT:
+    COUNT: ${SPRING_REDIS_KEY_COMMENT_COUNT}
+

@@ -9,6 +9,12 @@
         <option value="$PROJECT_DIR$/file/pom.xml" />
         <option value="$PROJECT_DIR$/gateway/pom.xml" />
         <option value="$PROJECT_DIR$/common/pom.xml" />
+        <option value="$PROJECT_DIR$/shared/pom.xml" />
+        <option value="$PROJECT_DIR$/pom.xml" />
+        <option value="$PROJECT_DIR$/protocol/pom.xml" />
+        <option value="$PROJECT_DIR$/profile/pom.xml" />
+        <option value="$PROJECT_DIR$/post/pom.xml" />
+        <option value="$PROJECT_DIR$/comment/pom.xml" />
       </list>
     </option>
     <option name="ignoredFiles">
@@ -16,6 +22,10 @@
         <option value="$PROJECT_DIR$/common/pom.xml" />
       </set>
     </option>
+  </component>
+  <component name="PWA">
+    <option name="enabled" value="true" />
+    <option name="wasEnabledAtLeastOnce" value="true" />
   </component>
   <component name="ProjectRootManager" version="2" languageLevel="JDK_21" default="true" project-jdk-name="21" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
