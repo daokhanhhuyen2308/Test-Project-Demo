@@ -14,7 +14,7 @@ public class TagEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String tagName;
+    private String name;
     private String slug;
 
     @ManyToMany(mappedBy = "tags")

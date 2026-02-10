@@ -29,7 +29,12 @@ public enum ErrorCode {
     INPUT_REQUIREMENT("E0018", "Input requirement", HttpStatus.BAD_REQUEST),
     DO_NOT_CONNECT_TO_ELASTICSEARCH("E0019", "Don't connect to ElasticSearch", HttpStatus.BAD_REQUEST),
     CATEGORY_NOT_FOUND("E0020", "Category not found", HttpStatus.NOT_FOUND),
-    NOT_FOUND_POST_BY_SLUG("E0021", "Post not found by slug", HttpStatus.NOT_FOUND);
+    NOT_FOUND_POST_BY_SLUG("E0021", "Post not found by slug", HttpStatus.NOT_FOUND),
+    INVALID_INPUT("E0022", "Invalid input", HttpStatus.BAD_REQUEST),
+    SLUG_IS_REQUIRED("E0023", "Slug is required", HttpStatus.BAD_REQUEST),
+    BAD_WORD_DETECTED("E0024", "Bad word found", HttpStatus.BAD_REQUEST),
+    SPAM_LINK_DETECTED("E0025", "No links allowed! Spam detected.", HttpStatus.BAD_REQUEST),
+    SUCCESS("0000", "Success", HttpStatus.OK);
 
     private final String code;
     private final String message;

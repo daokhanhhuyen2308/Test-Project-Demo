@@ -21,6 +21,7 @@ services:
                 - sub: X-User-Id
                 - email: X-User-Email
                 - preferred_username: X-User-Name
+                - avatar: X-User-Avatar
   - name: profile-service
     url: http://profile-service:8083
     routes:
@@ -39,6 +40,7 @@ services:
                 - sub: X-User-Id
                 - email: X-User-Email
                 - preferred_username: X-User-Name
+                - avatar: X-User-Avatar
   - name: post-service
     url: http://post-service:8084
     routes:
@@ -57,13 +59,34 @@ services:
                 - sub: X-User-Id
                 - email: X-User-Email
                 - preferred_username: X-User-Name
+                - avatar: X-User-Avatar
+
+  - name: comment-service
+    url: http://comment-service:8085
+    routes:
+      - name: comment-route
+        paths:
+          - /api/comments
+        strip_path: false
+        plugins:
+          - name: jwt
+            config:
+              header_name:
+                - Authorization
+              claims_to_verify:
+                - exp
+              claims_to_header:
+                - sub: X-User-Id
+                - email: X-User-Email
+                - preferred_username: X-User-Name
+                - avatar: X-User-Avatar
 
 consumers:
   - username: keycloak_issuer
     jwt_secrets:
-      - key: "http://localhost:8080/realms/master"
+      - key: "http://localhost:8080/realms/daokhanhhuyen"
         algorithm: RS256
-        rsa_public_key: MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAu...
+        rsa_public_key: SX_mIt8AMg9d9pXQ0bHskyepFhsA73wLVD6KtQa9GXA
         secret: "something"
 
 plugins:

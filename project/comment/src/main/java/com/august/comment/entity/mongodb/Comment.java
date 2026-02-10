@@ -1,12 +1,13 @@
-package com.august.comment.entity;
+package com.august.comment.entity.mongodb;
 
-import jakarta.persistence.Column;
 import jakarta.persistence.Id;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
 import java.time.LocalDateTime;
 
@@ -16,20 +17,25 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Document(collection = "comments")
+@CompoundIndex(name = "index_post_slug_created_at", def = "{'postSlug: 1', 'createdAt: -1'}")
 public class Comment {
     @Id
     private String id;
     private String content;
-    @Column(name = "author_id", nullable = false)
+    @Field(name = "author_id")
     private String authorId;
-    @Column(name = "author_username", nullable = false)
+    @Field(name = "author_username")
     private String authorUsername;
+    @Field(name = "author_avatar_url")
+    private String authorAvatarUrl;
     private Long postId;
+    private String postSlug;
     @Indexed
-    private String parentCmtId;
+    private String parentCommentId;
     @CreatedDate
     private LocalDateTime createdAt;
     @LastModifiedDate
     private LocalDateTime updatedAt;
-    private Boolean isDeleted = false;
+    @Field("reply_count")
+    private Integer replyCount;
 }

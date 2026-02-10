@@ -23,4 +23,6 @@ public class PostResponse {
     private Integer commentCount;
     private Integer readingTime;
     private String createdAt;
+    private Boolean isDeleted;
+
 }

@@ -59,6 +59,7 @@ public class IdentityServiceImpl implements IdentityService {
                 .setUserId(user.getId())
                 .setUsername(user.getUsername())
                 .setEmail(user.getEmail())
+                .setAvatarUrl(user.getAvatarUrl())
                 .build();
 
         try{

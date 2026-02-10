@@ -14,7 +14,8 @@ public class CategoryEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String categoryName;
+    private String name;
+    private String slug;
 
     @OneToMany(mappedBy = "category")
     private List<PostEntity> posts;

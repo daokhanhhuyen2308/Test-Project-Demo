@@ -1,6 +1,6 @@
 package com.august.post.service;
 
-import com.august.post.dto.PageResponse;
+import com.august.shared.dto.PageResponse;
 import com.august.post.dto.PostCreationRequest;
 import com.august.post.dto.PostPaginationFilter;
 import com.august.post.dto.PostResponse;

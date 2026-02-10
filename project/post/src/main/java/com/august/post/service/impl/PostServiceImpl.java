@@ -2,7 +2,8 @@ package com.august.post.service.impl;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
-import com.august.post.dto.PageResponse;
+import com.august.shared.dto.AuthCurrentUser;
+import com.august.shared.dto.PageResponse;
 import com.august.post.dto.PostCreationRequest;
 import com.august.post.dto.PostPaginationFilter;
 import com.august.post.dto.PostResponse;
@@ -20,7 +21,8 @@ import com.august.post.utils.SlugUtils;
 import com.august.shared.dto.ApiResponse;
 import com.august.shared.enums.ErrorCode;
 import com.august.shared.exception.AppCustomException;
-import com.august.shared.strategy.TimeStrategyContext;
+import com.august.shared.strategy.time.TimeUnitStrategy;
+import com.august.shared.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -44,22 +46,24 @@ public class PostServiceImpl implements PostService {
     private final PostElasticSearchRepo elasticSearchRepo;
     private final TagRepository tagRepository;
     private final CategoryRepository categoryRepository;
-    private final TimeStrategyContext timeStrategyContext;
+    private final TimeUnitStrategy timeUnitStrategy;
     private final ElasticsearchOperations elasticsearchOperations;
     private final RedisTemplate<String, Object> redisTemplate;
     @Value("${KEY.VIEW.COUNT}")
     private String KEY_VIEW_COUNT;
+    private final SecurityUtils securityUtils;
 
     @Override
     public ApiResponse<PostResponse> createPost(PostCreationRequest request, Jwt jwt) {
 
-        String userId = jwt.getSubject();
-        String username = jwt.getClaimAsString("preferred_username");
+        AuthCurrentUser currentUser = securityUtils.getCurrentUser();
 
         PostEntity postEntity = postMapper.mapToPostEntity(request);
         postEntity.setSlug(SlugUtils.slug(request.getTitle(), true));
-        postEntity.setAuthorId(userId);
-        postEntity.setAuthorUsername(username);
+        postEntity.setAuthorId(currentUser.getUserId());
+        postEntity.setAuthorUsername(currentUser.getUsername());
+        postEntity.setAuthorAvatarUrl(currentUser.getAvatarUrl());
+
         if (request.getTags() != null && !request.getTags().isEmpty()) {
             List<TagEntity> tagEntities = processTags(request.getTags());
             postEntity.setTags(tagEntities);
@@ -91,7 +95,8 @@ public class PostServiceImpl implements PostService {
             if (StringUtils.hasText(query.getKeyword())){
                 b.should(s -> s.multiMatch(m -> m
                         .query(query.getKeyword())
-                        .fields("authorUsername^4", "title^3", "summary^2", "content", "tags", "category")
+                        .fields("author.authorUsername^4", "title^3",
+                                        "summary^2", "content", "tags.name", "category.name")
                         .type(TextQueryType.BestFields)
                         .fuzziness("AUTO")
                         .prefixLength(1)
@@ -100,7 +105,7 @@ public class PostServiceImpl implements PostService {
 
             //Author filter
             if (StringUtils.hasText(query.getAuthorUsername())){
-                b.must(m -> m.term(t -> t.field("authorUsername.keyword")
+                b.must(m -> m.term(t -> t.field("author.authorUsername")
                         .value(query.getAuthorUsername())));
             }
 
@@ -152,8 +157,8 @@ public class PostServiceImpl implements PostService {
         apiResponse.setCode(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getCode());
         apiResponse.setMessage(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getMessage());
         return apiResponse;
-
     }
+
     @Override
     public ApiResponse<PostResponse> getPostBySlug(String slug) {
         PostEntity postEntity = postRepository.findBySlug(slug)
@@ -166,7 +171,7 @@ public class PostServiceImpl implements PostService {
     public List<PostResponse> getRelatedPosts(Long postId) {
 
         Query query = Query.of(q -> q.moreLikeThis(m -> m
-                .fields("title", "summary", "tags", "content", "category")
+                .fields("title", "summary", "tags.name", "content", "category.name")
                 .like(l -> l.document(d -> d
                         .index("posts_index")
                         .id(postId.toString())))
@@ -196,11 +201,10 @@ public class PostServiceImpl implements PostService {
     private List<TagEntity> processTags(List<String> tags){
         return tags.stream().map(tag -> {
             String tagSlug = SlugUtils.slug(tag, false);
-
             return tagRepository.findBySlug(tagSlug)
                     .orElseGet(() -> {
                         TagEntity newTag = new TagEntity();
-                        newTag.setTagName(tag);
+                        newTag.setName(tag);
                         newTag.setSlug(tagSlug);
                         return tagRepository.save(newTag);
                     });
@@ -210,7 +214,7 @@ public class PostServiceImpl implements PostService {
     private ApiResponse<PostResponse> mapToPostResponse(PostEntity entity){
         ApiResponse<PostResponse> response = new ApiResponse<>();
         PostResponse postResponse = postMapper.mapToPostResponse(entity);
-        postResponse.setCreatedAt(timeStrategyContext.executeStrategy(entity.getCreatedAt()));
+        postResponse.setCreatedAt(timeUnitStrategy.processTimeUnitStrategy(entity.getCreatedAt()));
         response.setResult(postResponse);
         response.setCode(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getCode());
         response.setCode(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getMessage());

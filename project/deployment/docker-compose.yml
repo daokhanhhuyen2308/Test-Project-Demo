@@ -1,23 +1,6 @@
 version: "3.9"
 
 services:
-  # --- BỔ SUNG MYSQL ---
-  mysql:
-    image: mysql:8.0
-    container_name: mysql
-    environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: authenticate
-    volumes:
-      - mysql_data:/var/lib/mysql
-    networks:
-      - app-network
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   # --- BỔ SUNG MONGODB ---
   mongodb:
     image: mongo:latest
@@ -100,16 +83,17 @@ services:
     ports:
       - "8081:8081"
     env_file:
+      - ./envs/common.env
       - ./envs/authenticate-service.env
     depends_on:
-      mysql:
-        condition: service_healthy
       redis:
         condition: service_healthy
       keycloak:
         condition: service_started
     networks:
       - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   file-service:
     build:
@@ -120,6 +104,7 @@ services:
     ports:
       - "8082:8082"
     env_file:
+      - ./envs/common.env
       - ./envs/file-service.env
     depends_on:
        mongodb:
@@ -140,16 +125,17 @@ services:
     ports:
       - "8083:8083"
     env_file:
+      - ./envs/common.env
       - ./envs/authenticate-service.env
     depends_on:
-      mysql:
-        condition: service_healthy
       redis:
         condition: service_healthy
       keycloak:
         condition: service_started
     networks:
       - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   post-service:
     build:
@@ -161,15 +147,16 @@ services:
       - "8084:8084"
     env_file:
       - ./envs/common.env
+      - ./envs/post-service.env
     depends_on:
-      mysql:
-        condition: service_healthy
       redis:
         condition: service_healthy
       keycloak:
         condition: service_started
     networks:
       - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   comment-service:
     build:
@@ -181,6 +168,7 @@ services:
       - "8085:8085"
     env_file:
       - ./envs/common.env
+      - ./envs/comment-service.env
     depends_on:
       mongodb:
         condition: service_healthy

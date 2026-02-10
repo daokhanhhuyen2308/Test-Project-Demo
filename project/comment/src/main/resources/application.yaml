@@ -1,12 +1,12 @@
-server:
-  port: 8085
-
 spring:
+  application:
+    name: comment
+
   security:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: ${SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
+          issuer-uri: ${AUTH_SERVER_ISSUER_URI}
 
   data:
     redis:
@@ -26,4 +26,8 @@ logging:
 KEY:
   COMMENT:
     COUNT: ${SPRING_REDIS_KEY_COMMENT_COUNT}
+#  RELIES:
+#    COUNT: ${SPRING_REDIS_KEY_COMMENT_RELIES_COUNT}
 
+server:
+  port: 8085

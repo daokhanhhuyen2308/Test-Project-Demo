@@ -5,7 +5,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: {SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI}
+          issuer-uri: ${AUTH_SERVER_ISSUER_URI}
 
   datasource:
     url: ${SPRING_MYSQL_URI}

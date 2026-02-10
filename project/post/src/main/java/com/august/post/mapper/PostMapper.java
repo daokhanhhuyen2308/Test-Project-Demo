@@ -1,17 +1,14 @@
 package com.august.post.mapper;
 
-import com.august.post.dto.CategoryResponse;
-import com.august.post.dto.PostCreationRequest;
-import com.august.post.dto.PostResponse;
-import com.august.post.dto.TagResponse;
+import com.august.post.dto.*;
 import com.august.post.entity.elasticsearch.PostDocument;
 import com.august.post.entity.mssql.CategoryEntity;
 import com.august.post.entity.mssql.PostEntity;
 import com.august.post.entity.mssql.TagEntity;
 import com.august.post.utils.SlugUtils;
-import com.august.protocol.post.IncreaseCommentRequest;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.Mappings;
 import org.mapstruct.Named;
 
 import java.util.Collections;
@@ -20,43 +17,50 @@ import java.util.List;
 @Mapper(componentModel = "spring")
 public interface PostMapper {
 
+    //request -> entity
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "authorId", ignore = true)
     @Mapping(target = "authorUsername", ignore = true)
+    @Mapping(target = "authorAvatarUrl", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "viewCount", ignore = true)
     @Mapping(target = "commentCount", ignore = true)
     @Mapping(target = "readingTime", ignore = true)
-    @Mapping(target = "isFeatured", ignore = true)
-    @Mapping(target = "isPaid", ignore = true)
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "tags", ignore = true)
     @Mapping(target = "slug", ignore = true)
+    @Mapping(target = "isDeleted", ignore = true)
     PostEntity mapToPostEntity(PostCreationRequest request);
 
-    @Mapping(source = "tags", target = "tags", qualifiedByName = "mapToTagsResponse")
-    @Mapping(source = "category", target = "category", qualifiedByName = "mapToCategoryResponse")
+    //entity -> response
+    @Mappings({
+                @Mapping(source = "authorId", target = "author.authorId"),
+                @Mapping(source = "authorUsername", target = "author.authorUsername"),
+                @Mapping(source = "authorAvatarUrl", target = "author.authorAvatarUrl"),
+                @Mapping(source = "tags", target = "tags", qualifiedByName = "mapToTagsResponse"),
+                @Mapping(source = "category", target = "category", qualifiedByName = "mapToCategoryResponse"),
+                @Mapping(target = "createdAt", ignore = true)
+    })
     PostResponse mapToPostResponse(PostEntity entity);
 
-    @Mapping(source = "tags", target = "tags", qualifiedByName = "mapToTagString")
-    @Mapping(source = "category", target = "categoryName", qualifiedByName = "mapToCategoryName")
+    //entity -> elastic
+    @Mapping(source = "authorId", target = "author.authorId")
+    @Mapping(source = "authorUsername", target = "author.authorUsername")
+    @Mapping(source = "authorAvatarUrl", target = "author.authorAvatarUrl")
+    @Mapping(target = "category", source = "category")
+    @Mapping(target = "tags", source = "tags")
+    @Mapping(target = "id", expression = "java(String.valueOf(postEntity.getId()))")
     PostDocument mapToDocument(PostEntity postEntity);
 
+    //elastic -> response
+    @Mappings({
+            @Mapping(source = "author.authorId", target = "author.authorId"),
+            @Mapping(source = "author.authorUsername", target = "author.authorUsername"),
+            @Mapping(source = "author.authorAvatarUrl", target = "author.authorAvatarUrl"),
+            @Mapping(target = "createdAt", ignore = true),
+    })
     PostResponse mapDocToResponse(PostDocument document);
-
-
-    PostEntity mapPostGrpcTpEntity(IncreaseCommentRequest request);
-
-    @Named("mapToTagString")
-    default List<String> mapToTagString(List<TagEntity> tagEntities){
-        return tagEntities.stream().map(TagEntity::getTagName).toList();
-    }
-
-    @Named("mapToCategoryName")
-    default String mapToCategoryName(CategoryEntity category){
-        return category.getCategoryName();
-    }
 
     @Named("mapToTagsResponse")
     default List<TagResponse> mapToTagsResponse(List<TagEntity> tags){
@@ -65,16 +69,18 @@ public interface PostMapper {
         }
         return tags.stream().map(tag -> TagResponse.builder()
                 .id(tag.getId())
-                .tag(tag.getTagName())
-                .slug(SlugUtils.slug(tag.getTagName(), false))
+                .name(tag.getName())
+                .slug(SlugUtils.slug(tag.getName(), false))
                 .build()).toList();
     }
+
 
     @Named("mapToCategoryResponse")
     default CategoryResponse mapToCategoryResponse(CategoryEntity category){
         return category != null ? CategoryResponse.builder()
-                .id(category.getId()).name(category.getCategoryName())
-                .slug(SlugUtils.slug(category.getCategoryName(), false))
+                .id(category.getId()).name(category.getName())
+                .slug(SlugUtils.slug(category.getName(), false))
                 .build() : null;
     }
+
 }

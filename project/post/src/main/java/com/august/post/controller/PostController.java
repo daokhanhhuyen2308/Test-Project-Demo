@@ -1,6 +1,6 @@
 package com.august.post.controller;
 
-import com.august.post.dto.PageResponse;
+import com.august.shared.dto.PageResponse;
 import com.august.post.dto.PostCreationRequest;
 import com.august.post.dto.PostPaginationFilter;
 import com.august.post.dto.PostResponse;
@@ -43,5 +43,7 @@ public class PostController {
         response.setResult(postService.getRelatedPosts(postId));
         return response;
     }
+
+
 
 }

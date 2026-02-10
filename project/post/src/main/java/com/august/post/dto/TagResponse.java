@@ -10,6 +10,6 @@ import lombok.*;
 @AllArgsConstructor
 public class TagResponse {
     private Long id;
-    private String tag;
+    private String name;
     private String slug;
 }

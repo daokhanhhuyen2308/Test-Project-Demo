@@ -36,8 +36,8 @@
           <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct-processor/1.5.5.Final/mapstruct-processor-1.5.5.Final.jar" />
           <entry name="$MAVEN_REPOSITORY$/org/mapstruct/mapstruct/1.5.5.Final/mapstruct-1.5.5.Final.jar" />
         </processorPath>
-        <module name="comment" />
         <module name="protocol" />
+        <module name="comment" />
         <module name="authenticate" />
         <module name="file" />
         <module name="post" />

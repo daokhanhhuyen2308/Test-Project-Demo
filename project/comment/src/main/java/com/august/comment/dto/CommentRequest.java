@@ -14,5 +14,5 @@ public class CommentRequest {
     @NotBlank(message = "Content cannot be empty")
     @Size(max = 500, message = "Comment too long")
     private String content;
-    private String parentCmtId;
+    private String parentCommentId;
 }

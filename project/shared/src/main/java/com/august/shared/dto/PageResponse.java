@@ -1,4 +1,4 @@
-package com.august.post.dto;
+package com.august.shared.dto;
 
 import lombok.Builder;
 import lombok.Getter;

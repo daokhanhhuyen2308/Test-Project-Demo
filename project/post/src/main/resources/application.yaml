@@ -6,13 +6,13 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: {SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI}
+          issuer-uri: ${AUTH_SERVER_ISSUER_URI}
 
   datasource:
-    password: 12345
-    username: sa
+    password: ${SPRING_MSSQL_PASSWORD}
+    username: ${SPRING_MSSQL_USERNAME}
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    url: dbc:sqlserver://localhost:1433;databaseName=PostServiceDB;encrypt=true;trustServerCertificate=true;
+    url: ${SPRING_MSSQL_URL}
 
   jpa:
     hibernate:
@@ -30,12 +30,7 @@ spring:
 logging:
   level:
     sql: error
-    org:
-      hibernate:
-        SQL: DEBUG
-        type:
-        descriptor:
-          sql: TRAC
+
 server:
   port: 8084
 

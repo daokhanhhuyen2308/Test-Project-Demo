@@ -15,8 +15,10 @@ import java.util.List;
 @Setter
 @Table(name = "posts", indexes = {
         @Index(name = "idx_post_slug", columnList = "slug", unique = true),
-        @Index(name = "idx_post_author", columnList = "author_id")
+        @Index(name = "idx_post_author_username", columnList = "author_username"),
+        @Index(name = "idx_created_at", columnList = "createdAt")
 })
+@Builder
 public class PostEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -35,6 +37,7 @@ public class PostEntity {
     private String authorId;
     @Column(name = "author_username", nullable = false)
     private String authorUsername;
+    private String authorAvatarUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id")
@@ -49,20 +52,18 @@ public class PostEntity {
     private List<TagEntity> tags;
     private String thumbnail;
 
-    @Column(name = "view_count", columnDefinition = "bigint default 0")
+    @Column(name = "view_count", columnDefinition = "Bigint default 0")
+    @Builder.Default
     private Long viewCount = 0L;
 
-    @Column(name = "comment_count", columnDefinition = "int default 0")
+    @Column(name = "comment_count", columnDefinition = "Int default 0")
+    @Builder.Default
     private Integer commentCount = 0;
 
     @Column(name = "reading_time")
     private Integer readingTime;
 
-    @Column(name = "is_featured")
-    private Boolean isFeatured = false;
-
-    @Column(name = "is_paid")
-    private Boolean isPaid = false;
+    @Builder.Default
     private Boolean isDeleted = false;
 
 }
