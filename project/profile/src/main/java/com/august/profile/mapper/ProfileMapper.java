@@ -9,6 +9,7 @@ import org.mapstruct.Mapping;
 @Mapper(componentModel = "spring")
 public interface ProfileMapper {
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "avatarUrl", ignore = true)
     UserProfile mapToProfileEntity(CreateProfileRequest request);
 
     @Mapping(source = "id", target = "profileId")

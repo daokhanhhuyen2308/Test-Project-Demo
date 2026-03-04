@@ -6,7 +6,7 @@ option java_package="com.august.protocol.profile";
 package profile;
 
 message CreateProfileRequest{
-  string userId = 1;
+  string keycloakId = 1;
   string username = 2;
   string email = 3;
   string avatarUrl = 4;

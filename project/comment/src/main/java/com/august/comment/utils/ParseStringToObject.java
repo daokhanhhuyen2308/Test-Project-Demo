@@ -1,8 +1,9 @@
 package com.august.comment.utils;
 
 
-import com.august.shared.enums.ErrorCode;
-import com.august.shared.exception.AppCustomException;
+
+import com.august.sharecore.enums.ErrorCode;
+import com.august.sharecore.exception.AppCustomException;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;

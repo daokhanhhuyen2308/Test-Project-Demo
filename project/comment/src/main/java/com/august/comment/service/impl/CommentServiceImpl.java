@@ -2,21 +2,22 @@ package com.august.comment.service.impl;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
+import co.elastic.clients.json.JsonData;
 import com.august.comment.dto.CommentRequest;
 import com.august.comment.dto.CommentResponse;
-import com.august.comment.dto.RepliesPaginationFilter;
-import com.august.comment.entity.elasticsearch.CommentDocument;
+import com.august.comment.dto.CommentPaginationFilter;
+import com.august.comment.entity.elastic.CommentDocument;
 import com.august.comment.entity.mongodb.Comment;
 import com.august.comment.mapper.CommentMapper;
-import com.august.comment.repository.CommentESRepository;
-import com.august.comment.repository.CommentRepository;
+import com.august.comment.repository.elastic.CommentESRepository;
+import com.august.comment.repository.jpa.CommentRepository;
 import com.august.comment.service.CommentService;
-import com.august.shared.dto.AuthCurrentUser;
-import com.august.shared.dto.PageResponse;
-import com.august.shared.enums.ErrorCode;
-import com.august.shared.exception.AppCustomException;
-import com.august.shared.strategy.time.TimeUnitStrategy;
-import com.august.shared.utils.SecurityUtils;
+import com.august.sharecore.dto.PageResponse;
+import com.august.sharecore.enums.ErrorCode;
+import com.august.sharecore.exception.AppCustomException;
+import com.august.sharecore.strategy.time.TimeUnitStrategy;
+import com.august.sharesecurity.dto.AuthCurrentUser;
+import com.august.sharesecurity.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -25,9 +26,12 @@ import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 
@@ -37,7 +41,7 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
     private final TimeUnitStrategy timeUnitStrategy;
-    private final RedisTemplate<String, String> redisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
     @Value("${KEY.COMMENT.COUNT}")
     private String KEY_COMMENT_COUNT;
     private final ElasticsearchOperations elasticsearchOperations;
@@ -50,25 +54,26 @@ public class CommentServiceImpl implements CommentService {
         AuthCurrentUser currentUser = securityUtils.getCurrentUser();
 
         Comment comment = commentMapper.mapToComment(request);
-        comment.setAuthorId(comment.getAuthorId());
+        comment.setAuthorId(currentUser.getKeycloakId());
         comment.setAuthorUsername(currentUser.getUsername());
-        comment.setAuthorAvatarUrl(comment.getAuthorAvatarUrl());
+        comment.setAuthorAvatarUrl(currentUser.getAvatarUrl());
         Comment savedComment = commentRepository.save(comment);
 
-        String keyCmtCount = KEY_COMMENT_COUNT + request.getPostId();
-        redisTemplate.opsForValue().increment(keyCmtCount);
+        String keyCmtCount = KEY_COMMENT_COUNT + "_" + request.getPostId();
+        stringRedisTemplate.opsForValue().increment(keyCmtCount);
+        stringRedisTemplate.expire(keyCmtCount, Duration.ofHours(24));
 
-        CommentDocument document = commentMapper.mapEntityToDoc(comment);
+        CommentDocument document = commentMapper.mapEntityToDoc(savedComment);
         commentESRepository.save(document);
 
         CommentResponse response = commentMapper.mapToCmtResponse(savedComment);
-        response.setCreatedAt(timeUnitStrategy.processTimeUnitStrategy(comment.getCreatedAt()));
+        response.setCreatedAt(timeUnitStrategy.processTimeUnitStrategy(savedComment.getCreatedAt()));
 
         return response;
     }
 
     @Override
-    public PageResponse<CommentResponse> getAllCommentReplies(RepliesPaginationFilter filter) {
+    public PageResponse<CommentResponse> getAllCommentReplies(CommentPaginationFilter filter) {
 
         securityUtils.getCurrentUser();
 
@@ -81,10 +86,17 @@ public class CommentServiceImpl implements CommentService {
                     .value(FieldValue.of(filter.getParentCmtId()))));
 
             if (filter.getFromDate() != null || filter.getToDate() != null){
-                b.must(m -> m.range(r -> r.date(d -> d.field("createdAd")
-                        .gte(filter.getFromDate() != null ? filter.getFromDate().toString() : null)
-                        .lte(filter.getToDate() != null ? filter.getToDate().toString() : null))));
+                LocalDateTime from = filter.getFromDate() != null
+                        ? filter.getFromDate().atStartOfDay()
+                        : null;
 
+                LocalDateTime to = filter.getToDate() != null
+                        ? filter.getToDate().atTime(LocalTime.MAX)
+                        : null;
+
+                b.must(m -> m.range(r -> r.field("createdAt")
+                        .gte(filter.getFromDate() != null ? JsonData.of(from) : null)
+                        .lte(filter.getToDate() != null ? JsonData.of(to) : null)));
             }
             return b;
         }));
@@ -93,7 +105,7 @@ public class CommentServiceImpl implements CommentService {
     }
 
     @Override
-    public PageResponse<CommentResponse> getAllCommentsBySlug(RepliesPaginationFilter filter, String slug) {
+    public PageResponse<CommentResponse> getAllCommentsBySlug(CommentPaginationFilter filter, String slug) {
 
         if (slug == null || slug.isBlank()){
             throw new AppCustomException(ErrorCode.SLUG_IS_REQUIRED);
@@ -109,7 +121,8 @@ public class CommentServiceImpl implements CommentService {
         return processNativeQuery(query, filter, true);
     }
 
-    private PageResponse<CommentResponse> processNativeQuery(Query query, RepliesPaginationFilter filter, Boolean isSlug){
+    private PageResponse<CommentResponse> processNativeQuery(Query query, CommentPaginationFilter filter,
+                                                             Boolean isSlug){
         Sort.Direction direction = filter.isSortDesc() ? Sort.Direction.DESC : Sort.Direction.ASC;
 
         NativeQuery nativeQuery =  NativeQuery.builder()
@@ -138,6 +151,7 @@ public class CommentServiceImpl implements CommentService {
                     if (isSlug){
                         CommentResponse response = commentMapper.mapDocToResponse(hit);
                         response.setReplies(null);
+                        response.setCreatedAt(timeUnitStrategy.processTimeUnitStrategy(hit.getCreatedAt()));
                         return response;
                     }
                     return commentMapper.mapDocToResponse(hit);

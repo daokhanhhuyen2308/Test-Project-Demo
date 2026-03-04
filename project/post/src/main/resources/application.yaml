@@ -6,13 +6,14 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${AUTH_SERVER_ISSUER_URI}
+          issuer-uri: http://localhost:9090/realms/daokhanhhuyen
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
 
   datasource:
-    password: ${SPRING_MSSQL_PASSWORD}
-    username: ${SPRING_MSSQL_USERNAME}
+    username: sa
+    password: 12345
     driver-class-name: com.microsoft.sqlserver.jdbc.SQLServerDriver
-    url: ${SPRING_MSSQL_URL}
+    url: jdbc:sqlserver://localhost:1433;databaseName=post;encrypt=true;trustServerCertificate=true
 
   jpa:
     hibernate:
@@ -23,13 +24,27 @@ spring:
         format_sql: true
 
   elasticsearch:
-    uris: http://localhost:9200
     connection-timeout: 5s
     socket-timeout: 5s
+    uris: http://localhost:9200
+
+  data:
+    redis:
+      repositories:
+        enabled: false
+      host: localhost
+      port: 6379
 
 logging:
   level:
     sql: error
+    org.hibernate.orm.connections.pooling: OFF
+    org:
+      springframework:
+        security: DEBUG
+        boot:
+          context:
+            config: DEBUG
 
 server:
   port: 8084
@@ -37,6 +52,12 @@ server:
 
 KEY:
   COMMENT:
-    COUNT: ${SPRING_REDIS_KEY_COMMENT_COUNT}
+    COUNT: POST_COMMENT_COUNT
   VIEW:
-    COUNT: ${SPRING_REDIS_KEY_VIEW_COUNT}
+    COUNT: POST_VIEW_COUNT
+
+grpc:
+  client:
+    file-service-grpc:
+      address: static://localhost:9092
+      negotiation-type: PLAINTEXT

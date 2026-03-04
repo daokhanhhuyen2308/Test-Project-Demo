@@ -1,8 +1,8 @@
 package com.august.file.config;
 
-import com.august.file.utils.Endpoints;
-import com.august.shared.exception.CustomAccessDenied;
-import com.august.shared.exception.CustomAuthEntryPoint;
+import com.august.sharesecurity.exception.CustomAccessDenied;
+import com.august.sharesecurity.exception.CustomAuthEntryPoint;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -31,12 +31,24 @@ public class SecurityConfig {
         }
 
         @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) {
+        public CustomAuthEntryPoint customAuthEntryPoint(ObjectMapper objectMapper) {
+                return new CustomAuthEntryPoint(objectMapper);
+        }
+
+        @Bean
+        public CustomAccessDenied customAccessDenied(ObjectMapper objectMapper) {
+                return new CustomAccessDenied(objectMapper);
+        }
+
+        @Bean
+        public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity,
+                                                       CustomAccessDenied accessDenied,
+                                                       CustomAuthEntryPoint authEntryPoint) throws Exception {
                 httpSecurity
                                 .cors(AbstractHttpConfigurer::disable)
                                 .csrf(AbstractHttpConfigurer::disable)
                                 .authorizeHttpRequests(
-                                                auth -> auth.requestMatchers(Endpoints.PUBLIC_ENDPOINTS).permitAll()
+                                                auth -> auth.requestMatchers("/api/files/export/**").permitAll()
                                                         .anyRequest().authenticated());
                 httpSecurity.oauth2ResourceServer(
                                 oauth2 -> oauth2.jwt(
@@ -46,8 +58,8 @@ public class SecurityConfig {
 
                 httpSecurity.exceptionHandling(
                                 exception -> {
-                                        exception.authenticationEntryPoint(new CustomAuthEntryPoint());
-                                        exception.accessDeniedHandler(new CustomAccessDenied());
+                                        exception.authenticationEntryPoint(authEntryPoint);
+                                        exception.accessDeniedHandler(accessDenied);
                                 });
 
                 httpSecurity.sessionManagement(

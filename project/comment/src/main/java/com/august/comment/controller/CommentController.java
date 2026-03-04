@@ -2,27 +2,26 @@ package com.august.comment.controller;
 
 import com.august.comment.dto.CommentRequest;
 import com.august.comment.dto.CommentResponse;
-import com.august.comment.dto.RepliesPaginationFilter;
+import com.august.comment.dto.CommentPaginationFilter;
 import com.august.comment.service.CommentService;
 import com.august.comment.utils.ParseStringToObject;
-import com.august.shared.dto.ApiResponse;
-import com.august.shared.dto.PageResponse;
-import com.august.shared.enums.ErrorCode;
+import com.august.sharecore.dto.ApiResponse;
+import com.august.sharecore.dto.PageResponse;
+import com.august.sharecore.enums.ErrorCode;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 
 @RestController
 @RequestMapping("/api/comments")
+@RequiredArgsConstructor
 public class CommentController {
     private final CommentService commentService;
 
-    public CommentController(CommentService commentService) {
-        this.commentService = commentService;
-    }
-
-    @PostMapping
+    @PostMapping("/create-comment")
     public ApiResponse<CommentResponse> createCommentPost(@RequestBody @Valid CommentRequest request){
+        System.out.println("Vào day roi ");
         return ApiResponse.<CommentResponse>builder()
                 .result(commentService.createCommentPost(request))
                 .build();
@@ -34,7 +33,7 @@ public class CommentController {
                                                                            @RequestParam(defaultValue = "10", required = false) int size,
                                                                            @RequestParam(required = false) String cursor,
                                                                            @RequestParam(defaultValue = "true") Boolean sort){
-        RepliesPaginationFilter filter = RepliesPaginationFilter.builder()
+        CommentPaginationFilter filter = CommentPaginationFilter.builder()
                 .page(page)
                 .size(size)
                 .parentCmtId(parentCmtId)
@@ -51,16 +50,7 @@ public class CommentController {
 
     @GetMapping("/{slug}")
     public ApiResponse<PageResponse<CommentResponse>> getAllCommentsBySlug(@PathVariable String slug,
-                                                                           @RequestParam(defaultValue = "0", required = false) int page,
-                                                                           @RequestParam(defaultValue = "10", required = false) int size,
-                                                                           @RequestParam(required = false) String cursor,
-                                                                           @RequestParam(defaultValue = "true") Boolean sort){
-        RepliesPaginationFilter filter = RepliesPaginationFilter.builder()
-                .page(page)
-                .size(size)
-                .sortDesc(sort)
-                .searchAfter(ParseStringToObject.parse(cursor))
-                .build();
+                                                                           @ModelAttribute CommentPaginationFilter filter){
 
         return ApiResponse.<PageResponse<CommentResponse>>builder()
                 .result(commentService.getAllCommentsBySlug(filter, slug))
@@ -68,4 +58,7 @@ public class CommentController {
                 .message(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getMessage())
                 .build();
     }
+
+    @GetMapping("/ping")
+    public String ping() { return "ok"; }
 }

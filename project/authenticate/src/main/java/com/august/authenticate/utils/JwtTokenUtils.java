@@ -2,8 +2,8 @@ package com.august.authenticate.utils;
 
 import com.august.authenticate.entity.UserEntity;
 import com.august.authenticate.repository.UserRepository;
-import com.august.shared.enums.ErrorCode;
-import com.august.shared.exception.AppCustomException;
+import com.august.sharecore.enums.ErrorCode;
+import com.august.sharecore.exception.AppCustomException;
 import com.nimbusds.jose.*;
 import com.nimbusds.jose.crypto.MACSigner;
 import com.nimbusds.jose.crypto.MACVerifier;

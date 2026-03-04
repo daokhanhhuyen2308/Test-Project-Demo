@@ -1,5 +1,6 @@
 package com.august.file.dto.responses;
 
+import com.august.file.enums.FilePurposeEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -18,5 +19,6 @@ public class FileResponse {
     private long size;
     private Instant uploadedAt;
     private String contentType;
+    private FilePurposeEntity purpose;
 
 }

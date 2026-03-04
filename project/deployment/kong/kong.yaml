@@ -1,110 +1,115 @@
 _format_version: "3.0"
 
 services:
-  - name: file-service
-    url: http://file-service:8082
+  - name: authenticate-service
+    url: http://host.docker.internal:8081
     routes:
-      - name: file-route
-        paths:
-          - /api/files
+      - name: authenticate-route
+        paths: ["/api/auth", "/api/users/create-user", "/api/users/create"]
         strip_path: false
-        plugins:
-          - name: openid-connect
-            service: file-service
-            config:
-              header_name:
-                - Authorization
-              key_claim_name: iss
-              claims_to_verify:
-                - exp
-              claims_to_header:
-                - sub: X-User-Id
-                - email: X-User-Email
-                - preferred_username: X-User-Name
-                - avatar: X-User-Avatar
+
+  - name: file-public-service
+    url: http://host.docker.internal:8082
+    routes:
+      - name: file-public-route
+        paths: ["/api/files"]
+        strip_path: false
+
+  - name: file-private-service
+    url: http://host.docker.internal:8082
+    routes:
+      - name: file-private-route
+        paths: ["/api/files/export"]
+        strip_path: false
+    plugins: &jwt_with_lua
+      - name: jwt
+        config:
+          key_claim_name: iss
+          claims_to_verify: [ "exp" ]
+          header_names: [ "Authorization" ]
+
+      - name: pre-function
+        config:
+          access:
+            - |
+              local jwt_decoder = require "kong.plugins.jwt.jwt_parser"
+              local token_str = kong.request.get_header("Authorization")
+
+              if token_str then
+                if token_str:find("Bearer") then
+                  token_str = token_str:sub(8)
+                end
+
+                local jwt, err = jwt_decoder:new(token_str)
+                if jwt and jwt.claims then
+                  kong.service.request.set_header("X-User-Id", jwt.claims.sub)
+                  kong.service.request.set_header("X-User-Email", jwt.claims.email)
+                  kong.service.request.set_header("X-User-Name", jwt.claims.preferred_username)
+                  
+                  local ra = jwt.claims.realm_access
+                  if ra and ra.roles then
+                    kong.service.request.set_header("X-User-Roles", table.concat(ra.roles, ","))
+                  end
+              
+                  if jwt.claims.avatar then
+                    kong.service.request.set_header("X-User-Avatar", jwt.claims.avatar)
+                  end
+                end
+              end
+
+#Profile Service
   - name: profile-service
-    url: http://profile-service:8083
+    url: http://host.docker.internal:8083
     routes:
       - name: profile-route
-        paths:
-          - /api/profiles
+        paths: ["/api/profiles"]
         strip_path: false
-        plugins:
-          - name: jwt
-            config:
-              header_name:
-                - Authorization
-              claims_to_verify:
-                - exp
-              claims_to_header:
-                - sub: X-User-Id
-                - email: X-User-Email
-                - preferred_username: X-User-Name
-                - avatar: X-User-Avatar
-  - name: post-service
-    url: http://post-service:8084
-    routes:
-      - name: post-route
-        paths:
-          - /api/posts
-        strip_path: false
-        plugins:
-          - name: jwt
-            config:
-              header_name:
-                - Authorization
-              claims_to_verify:
-                - exp
-              claims_to_header:
-                - sub: X-User-Id
-                - email: X-User-Email
-                - preferred_username: X-User-Name
-                - avatar: X-User-Avatar
+    plugins: *jwt_with_lua
 
+#Post Service
+  - name: post-public-service
+    url: http://host.docker.internal:8084
+    routes:
+      - name: post-public-route
+        paths: ["/api/posts"]
+        strip_path: false
+
+  - name: post-private-service
+    url: http://host.docker.internal:8084
+    routes:
+      - name: post-private-route
+        paths: ["/api/posts/create", "/api/debug/headers"]
+        strip_path: false
+    plugins: *jwt_with_lua
+
+#Comment Service
   - name: comment-service
-    url: http://comment-service:8085
+    url: http://host.docker.internal:8085
     routes:
       - name: comment-route
-        paths:
-          - /api/comments
+        paths: ["/api/comments", "/ping"]
         strip_path: false
-        plugins:
-          - name: jwt
-            config:
-              header_name:
-                - Authorization
-              claims_to_verify:
-                - exp
-              claims_to_header:
-                - sub: X-User-Id
-                - email: X-User-Email
-                - preferred_username: X-User-Name
-                - avatar: X-User-Avatar
-
-consumers:
-  - username: keycloak_issuer
-    jwt_secrets:
-      - key: "http://localhost:8080/realms/daokhanhhuyen"
-        algorithm: RS256
-        rsa_public_key: SX_mIt8AMg9d9pXQ0bHskyepFhsA73wLVD6KtQa9GXA
-        secret: "something"
+    plugins: *jwt_with_lua
 
 plugins:
   - name: rate-limiting
     config:
       second: 10
       policy: local
-      error_code: 429
   - name: cors
     config:
-      origins:
-        - "*"
-      methods:
-        - GET
-        - POST
-        - PUT
-        - DELETE
-        - OPTIONS
+      origins: ["*"]
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
       headers:
         - Authorization
         - Content-Type
+consumers:
+  - username: augustine
+    jwt_secrets:
+      - key: "http://localhost:9090/realms/daokhanhhuyen"
+        algorithm: RS256
+        rsa_public_key: |
+          -----BEGIN PUBLIC KEY-----
+          MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAoyl6qt+h82LQqAhmS74D4nku5iUpHTbse5d7w2MOvRJHIwSQXYMvqCEPBIomz/jczI+x8IXe7LYDqJeOh19u/PljZMNGwKt1fCcYbq5xtfP0YOutjxvM39C4H5qo8WMu251RfidVAXDlQ4uaXVKpgSLkg4rArwU6WvAwTXplY4eelrltOYSlOajueFGkqbuRRqWHkhV9h7uprIWlUSIVaC+m24fgkhzU6GJHt8h9xdsolpBV0okyl4JdMF/xNVhqcShC/Y92zDltrzZm/6cOyKh4FgxWNES+hjLL1hrRBToo0dhs5O9umH+oUfj7fCxHnljEscEbA2xCn+u09gq6FwIDAQAB
+          -----END PUBLIC KEY-----
+        secret: "something"

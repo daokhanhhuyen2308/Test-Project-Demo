@@ -1,5 +1,6 @@
 package com.august.file.entity;
 
+import com.august.file.enums.FilePurposeEntity;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
@@ -20,7 +21,7 @@ public class FileEntity {
     private Instant uploadedAt;
     private String contentType;
     private boolean isViewable;
-
+    private FilePurposeEntity purpose;
     public FileEntity() {
         this.uploadedAt = Instant.now();
     }

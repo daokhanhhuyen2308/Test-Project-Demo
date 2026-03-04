@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.0.2</version> <relativePath/>
+        <version>3.3.5</version> <relativePath/>
     </parent>
 
     <groupId>com.august</groupId>
@@ -15,7 +15,7 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>shared</module>
+        <module>share-security</module>
         <module>authenticate</module>
         <module>file</module>
         <module>gateway</module>
@@ -23,6 +23,9 @@
         <module>protocol</module>
         <module>post</module>
         <module>comment</module>
+        <module>notification</module>
+        <module>share-core</module>
+        <module>search</module>
     </modules>
 
     <properties>
@@ -44,7 +47,12 @@
             </dependency>
             <dependency>
                 <groupId>com.august</groupId>
-                <artifactId>shared</artifactId>
+                <artifactId>share-security</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.august</groupId>
+                <artifactId>share-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
         </dependencies>
@@ -60,11 +68,6 @@
             <groupId>org.mapstruct</groupId>
             <artifactId>mapstruct</artifactId>
             <version>${org.mapstruct.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
         </dependency>
     </dependencies>
     <build>

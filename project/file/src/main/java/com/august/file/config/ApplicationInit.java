@@ -11,7 +11,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 
-@org.jspecify.annotations.NullMarked
 @Component
 @Slf4j
 public class ApplicationInit implements ApplicationRunner {
@@ -20,7 +19,7 @@ public class ApplicationInit implements ApplicationRunner {
     private String storageLocation;
 
     @Override
-    public void run(ApplicationArguments args) throws Exception {
+    public void run(ApplicationArguments args){
         try{
             Path rootLocation = Paths.get(storageLocation);
             if (!Files.exists(rootLocation)){

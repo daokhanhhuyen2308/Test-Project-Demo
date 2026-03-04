@@ -16,6 +16,7 @@ public class UserProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+    private String keycloakId;
     private String userId;
     private String username;
     private String email;

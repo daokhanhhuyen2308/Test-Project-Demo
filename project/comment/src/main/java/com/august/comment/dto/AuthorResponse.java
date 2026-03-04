@@ -1,14 +1,12 @@
 package com.august.comment.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 @Setter
+@Getter
 public class AuthorResponse {
     private String authorId;
     private String authorUsername;

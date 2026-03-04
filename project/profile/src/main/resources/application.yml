@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: profile
+  datasource:
+    url: jdbc:mysql://localhost:3306/identity?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/daokhanhhuyen
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+server:
+  port: 8083
+
+grpc:
+  server:
+    port: 9091
+  client:
+    file-service-grpc:
+      address: static://localhost:9000
+      negotiation-type: PLAINTEXT
+
+keycloak:
+  serverUrl: http://localhost:9090
+  realm: daokhanhhuyen
+  client-id: identity-service
+  client-secret: jNJ6jaVjlxwd4jalbmFAQh6w2itmrOfj

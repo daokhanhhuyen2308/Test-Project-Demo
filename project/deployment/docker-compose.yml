@@ -37,13 +37,15 @@ services:
     image: quay.io/keycloak/keycloak:latest
     container_name: keycloak
     ports:
-      - "8080:8080"
+      - "9090:8080"
     environment:
       KC_BOOTSTRAP_ADMIN_USERNAME: admin
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_HTTP_ENABLED: "true"
       KC_HEALTH_ENABLED: "true"
       KC_HOSTNAME_STRICT: "false"
+    volumes:
+      - ./keycloak-data:/opt/keycloak/data
     command: start-dev
     networks:
       - app-network
@@ -55,11 +57,19 @@ services:
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
       - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
     networks:
       - app-network
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:9200" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.1
@@ -70,112 +80,6 @@ services:
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
     depends_on:
       - elasticsearch
-    networks:
-      - app-network
-
-  # Application Services
-  authenticate-service:
-    build:
-      context: ../authenticate
-      dockerfile: Dockerfile
-    image: authenticate-service:latest
-    container_name: authenticate-service
-    ports:
-      - "8081:8081"
-    env_file:
-      - ./envs/common.env
-      - ./envs/authenticate-service.env
-    depends_on:
-      redis:
-        condition: service_healthy
-      keycloak:
-        condition: service_started
-    networks:
-      - app-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  file-service:
-    build:
-      context: ../file
-      dockerfile: Dockerfile
-    image: file-service:latest
-    container_name: file-service
-    ports:
-      - "8082:8082"
-    env_file:
-      - ./envs/common.env
-      - ./envs/file-service.env
-    depends_on:
-       mongodb:
-         condition: service_healthy
-       redis:
-         condition: service_healthy
-       keycloak:
-         condition: service_started
-    networks:
-      - app-network
-
-  profile-service:
-    build:
-      context: ../profile
-      dockerfile: Dockerfile
-    image: profile-service:latest
-    container_name: profile-service
-    ports:
-      - "8083:8083"
-    env_file:
-      - ./envs/common.env
-      - ./envs/authenticate-service.env
-    depends_on:
-      redis:
-        condition: service_healthy
-      keycloak:
-        condition: service_started
-    networks:
-      - app-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  post-service:
-    build:
-      context: ../post
-      dockerfile: Dockerfile
-    image: post-service:latest
-    container_name: post-service
-    ports:
-      - "8084:8084"
-    env_file:
-      - ./envs/common.env
-      - ./envs/post-service.env
-    depends_on:
-      redis:
-        condition: service_healthy
-      keycloak:
-        condition: service_started
-    networks:
-      - app-network
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
-  comment-service:
-    build:
-      context: ../comment
-      dockerfile: Dockerfile
-    image: comment-service:latest
-    container_name: comment-service
-    ports:
-      - "8085:8085"
-    env_file:
-      - ./envs/common.env
-      - ./envs/comment-service.env
-    depends_on:
-      mongodb:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-      keycloak:
-        condition: service_started
     networks:
       - app-network
 
@@ -190,12 +94,52 @@ services:
       KONG_DATABASE: "off"
       KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yaml
       KONG_ADMIN_LISTEN: 0.0.0.0:8001
+      KONG_UNTRUSTED_LUA: "on"
     volumes:
       - ./kong/kong.yaml:/etc/kong/kong.yaml:ro
     depends_on:
       - keycloak
     networks:
       - app-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  kafka:
+    image: bitnami/kafka:3.7.0
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "9094:9094"
+    environment:
+#      identity, must be number
+      - KAFKA_CFG_NODE_ID=1
+      - KAFKA_CFG_PROCESS_ROLES=controller,broker
+
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=1@kafka:9093
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+#   Config các cổng dữ liệu (9092 cho các container chạy trên Docker, 9094 cho máy local - Intellij)
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+#   Định danh Cluster và tính năng tự tạo Topic
+      - KAFKA_KRAFT_CLUSTER_ID=august-kafka-cluster-id-2026
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=true
+#      Allowing access without password
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    volumes:
+      - kafka_data:/bitnami/kafka
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka_ui
+    ports:
+      - "8181:8080"
+    restart: always
+    environment:
+      - KAFKA_CLUSTERS_0_NAME=kafka-cluster
+      - KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS=kafka:9092
+    depends_on:
+      - kafka
 
 networks:
   app-network:
@@ -205,3 +149,5 @@ volumes:
   mongodb_data:
   mysql_data:
   redis_data:
+  kafka_data:
+    driver: local

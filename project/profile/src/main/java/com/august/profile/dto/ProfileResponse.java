@@ -11,7 +11,7 @@ import lombok.Setter;
 public class ProfileResponse {
     @JsonProperty("profile_id")
     private String profileId;
-    @JsonProperty("user_id")
+    private String keycloakId;
     private String userId;
     private String username;
     private String email;

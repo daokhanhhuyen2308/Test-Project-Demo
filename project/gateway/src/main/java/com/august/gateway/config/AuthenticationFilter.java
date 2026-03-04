@@ -3,10 +3,13 @@ package com.august.gateway.config;
 import com.august.gateway.dto.responses.IntrospectResponse;
 import com.august.gateway.service.AuthenticationService;
 import com.august.gateway.utils.Endpoints;
-import com.august.shared.dto.ApiResponse;
-import com.august.shared.enums.ErrorCode;
-import com.august.shared.exception.AppCustomException;
-import com.august.shared.exception.GlobalExceptionHandler;
+import com.august.sharecore.dto.ApiResponse;
+import com.august.sharecore.enums.ErrorCode;
+import com.august.sharecore.exception.AppCustomException;
+import com.august.sharecore.exception.GlobalExceptionHandler;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -19,7 +22,6 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -27,8 +29,6 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.ObjectMapper;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
@@ -61,7 +61,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
 
         HttpHeaders httpHeaders = exchange.getRequest().getHeaders();
 
-        if (!httpHeaders.containsHeader(HttpHeaders.AUTHORIZATION)){
+        if (!httpHeaders.containsKey(HttpHeaders.AUTHORIZATION)){
             return unAuthorize(exchange);
         }
 
@@ -143,7 +143,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
                     DataBufferUtils.release(dataBuffer);
                     try {
                         JsonNode jsonNode = objectMapper.readTree(bytes);
-                        String email = jsonNode.get("email").asString();
+                        String email = jsonNode.get("email").asText();
 
                         if (email == null) {
                             return Mono.error(new AppCustomException(ErrorCode.EMAIL_IS_EMPTY));
@@ -166,7 +166,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
     }
 
     private Mono<Void> handleException(ServerWebExchange exchange, ErrorCode errorCode){
-        ResponseEntity<ApiResponse<?>> apiResponse = GlobalExceptionHandler.buildResponse(errorCode);
+        ResponseEntity<ApiResponse<?>> apiResponse = GlobalExceptionHandler.buildResponse(errorCode,null);
 
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(apiResponse.getStatusCode());
@@ -179,7 +179,7 @@ public class AuthenticationFilter implements GlobalFilter, Ordered {
             DataBuffer dataBuffer = response.bufferFactory().wrap(json.getBytes(StandardCharsets.UTF_8));
             return response.writeWith(Mono.just(dataBuffer));
         }
-        catch (JsonParseException e){
+        catch (JsonParseException | JsonProcessingException e){
             return Mono.error(e);
         }
 

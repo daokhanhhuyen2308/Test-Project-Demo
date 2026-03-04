@@ -6,28 +6,27 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          issuer-uri: ${AUTH_SERVER_ISSUER_URI}
+          issuer-uri: http://localhost:9090/realms/daokhanhhuyen
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
 
   data:
     redis:
-      host: ${SPRING_DATA_REDIS_HOST}
-      port: ${SPRING_DATA_REDIS_PORT}
+      host: localhost
+      port: 6379
       repositories:
         enabled: false
-
-  mongodb:
-    uri: ${SPRING_MONGODB_URI}
+    mongodb:
+      uri: mongodb://admin:12345@localhost:27017/comment_db?authSource=admin
 logging:
   level:
     org.mongodb.driver: WARN
     org.mongodb.driver.client: WARN
     org.springframework.data.mongodb: WARN
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE
 
 KEY:
   COMMENT:
-    COUNT: ${SPRING_REDIS_KEY_COMMENT_COUNT}
-#  RELIES:
-#    COUNT: ${SPRING_REDIS_KEY_COMMENT_RELIES_COUNT}
+    COUNT: POST_COMMENT_COUNT
 
 server:
   port: 8085

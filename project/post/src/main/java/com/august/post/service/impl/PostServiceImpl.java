@@ -2,28 +2,31 @@ package com.august.post.service.impl;
 
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
-import com.august.shared.dto.AuthCurrentUser;
-import com.august.shared.dto.PageResponse;
+import co.elastic.clients.json.JsonData;
+import com.august.post.repository.elastic.PostElasticSearchRepo;
+import com.august.protocol.profile.FileServiceGrpc;
+import com.august.sharecore.dto.ApiResponse;
+import com.august.sharecore.dto.PageResponse;
+import com.august.sharecore.enums.ErrorCode;
+import com.august.sharecore.exception.AppCustomException;
+import com.august.sharecore.strategy.time.TimeUnitStrategy;
+import com.august.sharesecurity.dto.AuthCurrentUser;
 import com.august.post.dto.PostCreationRequest;
 import com.august.post.dto.PostPaginationFilter;
 import com.august.post.dto.PostResponse;
-import com.august.post.entity.elasticsearch.PostDocument;
+import com.august.post.entity.elastic.PostDocument;
 import com.august.post.entity.mssql.CategoryEntity;
 import com.august.post.entity.mssql.PostEntity;
 import com.august.post.entity.mssql.TagEntity;
 import com.august.post.mapper.PostMapper;
-import com.august.post.repository.CategoryRepository;
-import com.august.post.repository.PostElasticSearchRepo;
-import com.august.post.repository.PostRepository;
-import com.august.post.repository.TagRepository;
+import com.august.post.repository.jpa.CategoryRepository;
+import com.august.post.repository.jpa.PostRepository;
+import com.august.post.repository.jpa.TagRepository;
 import com.august.post.service.PostService;
 import com.august.post.utils.SlugUtils;
-import com.august.shared.dto.ApiResponse;
-import com.august.shared.enums.ErrorCode;
-import com.august.shared.exception.AppCustomException;
-import com.august.shared.strategy.time.TimeUnitStrategy;
-import com.august.shared.utils.SecurityUtils;
+import com.august.sharesecurity.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
+import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -31,11 +34,14 @@ import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
-import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -43,24 +49,27 @@ import java.util.List;
 public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final PostMapper postMapper;
-    private final PostElasticSearchRepo elasticSearchRepo;
+    private final PostElasticSearchRepo postElasticSearchRepo;
     private final TagRepository tagRepository;
     private final CategoryRepository categoryRepository;
     private final TimeUnitStrategy timeUnitStrategy;
     private final ElasticsearchOperations elasticsearchOperations;
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final StringRedisTemplate stringRedisTemplate;
     @Value("${KEY.VIEW.COUNT}")
     private String KEY_VIEW_COUNT;
     private final SecurityUtils securityUtils;
+    @GrpcClient("file-service-grpc")
+    private final FileServiceGrpc.FileServiceBlockingStub fileStub;
 
     @Override
-    public ApiResponse<PostResponse> createPost(PostCreationRequest request, Jwt jwt) {
+    public ApiResponse<PostResponse> createPost(PostCreationRequest request) {
+        System.out.println("Service implement");
 
         AuthCurrentUser currentUser = securityUtils.getCurrentUser();
 
         PostEntity postEntity = postMapper.mapToPostEntity(request);
         postEntity.setSlug(SlugUtils.slug(request.getTitle(), true));
-        postEntity.setAuthorId(currentUser.getUserId());
+        postEntity.setAuthorKeycloakId(currentUser.getKeycloakId());
         postEntity.setAuthorUsername(currentUser.getUsername());
         postEntity.setAuthorAvatarUrl(currentUser.getAvatarUrl());
 
@@ -75,9 +84,9 @@ public class PostServiceImpl implements PostService {
 
         postRepository.save(postEntity);
 
-        try{
-        PostDocument postDocument = postMapper.mapToDocument(postEntity);
-        elasticSearchRepo.save(postDocument);
+        try {
+            PostDocument postDocument = postMapper.mapToDocument(postEntity);
+            postElasticSearchRepo.save(postDocument);
 
         } catch (Exception e) {
             throw new AppCustomException(ErrorCode.DO_NOT_CONNECT_TO_ELASTICSEARCH);
@@ -111,9 +120,18 @@ public class PostServiceImpl implements PostService {
 
             //Date range
             if (query.getFromDate() != null || query.getToDate() != null){
-                b.must(m -> m.range(r -> r.date(d -> d.field("createdAt")
-                        .gte(query.getFromDate() != null ? query.getFromDate().toString() : null)
-                        .lte(query.getToDate() != null ? query.getToDate().toString() : null))));
+
+                LocalDateTime from = query.getFromDate() != null
+                        ? query.getFromDate().atStartOfDay()
+                        : null;
+
+                LocalDateTime to = query.getToDate() != null
+                        ? query.getToDate().atTime(LocalTime.MAX)
+                        : null;
+
+                b.must(m -> m.range(r -> r.field("createdAt")
+                        .gte(query.getFromDate() != null ? JsonData.of(from) : null)
+                        .lte(query.getToDate() != null ? JsonData.of(to) : null)));
             }
             return b;
 
@@ -141,7 +159,11 @@ public class PostServiceImpl implements PostService {
             nextSearchAfter = lastHit.getSortValues().toArray();
         }
         List<PostResponse> content = searchHits.stream()
-                .map(hit -> postMapper.mapDocToResponse(hit.getContent()))
+                .map(hit -> {
+                    PostResponse response = postMapper.mapDocToResponse(hit.getContent());
+                    response.setCreatedAt(timeUnitStrategy.processTimeUnitStrategy(hit.getContent().getCreatedAt()));
+                    return response;
+                })
                 .toList();
 
         ApiResponse<PageResponse<PostResponse>> apiResponse = new ApiResponse<>();
@@ -156,6 +178,7 @@ public class PostServiceImpl implements PostService {
         apiResponse.setResult(pageResponse);
         apiResponse.setCode(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getCode());
         apiResponse.setMessage(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getMessage());
+        apiResponse.setStatus(200);
         return apiResponse;
     }
 
@@ -163,7 +186,9 @@ public class PostServiceImpl implements PostService {
     public ApiResponse<PostResponse> getPostBySlug(String slug) {
         PostEntity postEntity = postRepository.findBySlug(slug)
                 .orElseThrow(() -> new AppCustomException(ErrorCode.NOT_FOUND_POST_BY_SLUG));
-        redisTemplate.opsForValue().increment(KEY_VIEW_COUNT +postEntity.getId(), 1);
+        String key = KEY_VIEW_COUNT + "_" + postEntity.getId();
+        stringRedisTemplate.opsForValue().increment(key);
+        stringRedisTemplate.expire(key, Duration.ofHours(24));
         return mapToPostResponse(postEntity);
     }
 
@@ -173,7 +198,7 @@ public class PostServiceImpl implements PostService {
         Query query = Query.of(q -> q.moreLikeThis(m -> m
                 .fields("title", "summary", "tags.name", "content", "category.name")
                 .like(l -> l.document(d -> d
-                        .index("posts_index")
+                        .index("post_index")
                         .id(postId.toString())))
                 .minDocFreq(1)
                 .maxDocFreq(1)
@@ -191,11 +216,16 @@ public class PostServiceImpl implements PostService {
                 .toList();
     }
 
+    @Override
+    public PostResponse uploadThumbnail(String postId, MultipartFile file) {
+        return null;
+    }
 
     private int calculateReadingTime(String content){
         if (content == null || content.isEmpty()) return 0;
-        int wordCount = content.trim().split("\\s+").length;
-        return (int) Math.ceil((double) wordCount / 200);
+        String[] words = content.trim().split("\\s+");
+        int wordCount = words.length;
+        return (int) Math.ceil(wordCount / 100.0);
     }
 
     private List<TagEntity> processTags(List<String> tags){
@@ -218,6 +248,8 @@ public class PostServiceImpl implements PostService {
         response.setResult(postResponse);
         response.setCode(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getCode());
         response.setCode(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getMessage());
+        response.setStatus(200);
         return response;
     }
+
 }

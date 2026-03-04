@@ -1,7 +1,9 @@
 package com.august.post.utils;
 
-import com.august.shared.enums.ErrorCode;
-import com.august.shared.exception.AppCustomException;
+
+
+import com.august.sharecore.enums.ErrorCode;
+import com.august.sharecore.exception.AppCustomException;
 
 import java.text.Normalizer;
 import java.util.Locale;

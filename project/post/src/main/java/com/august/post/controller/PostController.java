@@ -1,16 +1,15 @@
 package com.august.post.controller;
 
-import com.august.shared.dto.PageResponse;
+import com.august.sharecore.dto.PageResponse;
 import com.august.post.dto.PostCreationRequest;
 import com.august.post.dto.PostPaginationFilter;
 import com.august.post.dto.PostResponse;
 import com.august.post.service.PostService;
-import com.august.shared.dto.ApiResponse;
+import com.august.sharecore.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
@@ -22,9 +21,8 @@ public class PostController {
     private final PostService postService;
 
     @PostMapping("/create")
-    public ApiResponse<PostResponse> createPost(@RequestBody @Valid PostCreationRequest request,
-                                                @AuthenticationPrincipal Jwt jwt){
-        return postService.createPost(request, jwt);
+    public ApiResponse<PostResponse> createPost(@RequestBody @Valid PostCreationRequest request){
+        return postService.createPost(request);
     }
 
     @GetMapping("/{slug}")
@@ -42,6 +40,14 @@ public class PostController {
         ApiResponse<List<PostResponse>> response = new ApiResponse<>();
         response.setResult(postService.getRelatedPosts(postId));
         return response;
+    }
+
+    @PostMapping("/{postId}/upload-thumbnail")
+    public ApiResponse<PostResponse> uploadThumbnail(@PathVariable String postId,
+                                                     @RequestParam MultipartFile file){
+        return ApiResponse.<PostResponse>builder()
+                .result(postService.uploadThumbnail(postId, file))
+                .build();
     }
 
 

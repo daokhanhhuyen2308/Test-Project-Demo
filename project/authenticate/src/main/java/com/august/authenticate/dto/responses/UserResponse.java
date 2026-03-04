@@ -1,5 +1,6 @@
 package com.august.authenticate.dto.responses;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
@@ -12,6 +13,8 @@ import java.util.Set;
 @AllArgsConstructor
 public class UserResponse {
    private String id;
+   @JsonProperty("keycloak_id")
+   private String keycloakId;
    private String username;
    private String email;
    private String avatarUrl;

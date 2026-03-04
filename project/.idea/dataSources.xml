@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="DataSourceManagerImpl" format="xml" multifile-model="true">
-    <data-source source="LOCAL" name="identify@localhost" uuid="f10160a6-91db-4740-96ce-5fcf823b5b15">
+    <data-source source="LOCAL" name="identity@localhost" uuid="f10160a6-91db-4740-96ce-5fcf823b5b15">
       <driver-ref>mysql.8</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.mysql.cj.jdbc.Driver</jdbc-driver>
-      <jdbc-url>jdbc:mysql://address=(protocol=tcp)(host=localhost)(port=3306)/authenticate</jdbc-url>
+      <jdbc-url>jdbc:mysql://address=(protocol=tcp)(host=localhost)(port=3306)/identity</jdbc-url>
       <jdbc-additional-properties>
         <property name="com.intellij.clouds.kubernetes.db.host.port" />
         <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />
@@ -13,11 +13,11 @@
       </jdbc-additional-properties>
       <working-dir>$ProjectFileDir$</working-dir>
     </data-source>
-    <data-source source="LOCAL" name="post@localhost" uuid="707ff87a-18a5-4139-9997-460b59b3e319">
+    <data-source source="LOCAL" name="mssql@localhost" uuid="5fe31b4e-1e46-4a74-bfec-dd290f3f1e68">
       <driver-ref>sqlserver.ms</driver-ref>
       <synchronize>true</synchronize>
       <jdbc-driver>com.microsoft.sqlserver.jdbc.SQLServerDriver</jdbc-driver>
-      <jdbc-url>jdbc:sqlserver://localhost</jdbc-url>
+      <jdbc-url>jdbc:sqlserver://localhost;database=post</jdbc-url>
       <jdbc-additional-properties>
         <property name="com.intellij.clouds.kubernetes.db.host.port" />
         <property name="com.intellij.clouds.kubernetes.db.enabled" value="false" />

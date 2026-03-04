@@ -2,12 +2,12 @@ package com.august.profile.controller;
 
 import com.august.profile.dto.ProfileResponse;
 import com.august.profile.service.ProfileService;
-import com.august.shared.dto.ApiResponse;
+import com.august.sharecore.dto.ApiResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequiredArgsConstructor
@@ -19,6 +19,14 @@ public class ProfileController {
     @GetMapping("/{profileId}")
     public ApiResponse<ProfileResponse> getInfoUserProfile(@PathVariable String profileId){
         return profileService.getInfoUserProfile(profileId);
+    }
+
+    @PostMapping(value = "/me/upload-avatar", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<ProfileResponse> uploadAvatar(HttpServletRequest request, @RequestParam("avatar") MultipartFile avatar){
+        System.out.println("Content Type: " + request.getContentType());
+        return ApiResponse.<ProfileResponse>builder()
+                .result(profileService.uploadFileAvatar(avatar))
+                .build();
     }
 
 

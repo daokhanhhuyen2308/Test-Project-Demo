@@ -1,16 +1,18 @@
 package com.august.file.service.impl;
 
-import com.august.file.dto.requests.EmailDetailRequest;
-import com.august.file.dto.requests.EmailTaskDTO;
 import com.august.file.dto.requests.FileDownloadDTO;
 import com.august.file.dto.responses.FileResponse;
 import com.august.file.entity.FileEntity;
-import com.august.file.enums.StatusSendEmail;
 import com.august.file.mapper.FileMapper;
+import com.august.file.mapper.FilePurposeConverter;
 import com.august.file.repository.FileRepository;
 import com.august.file.service.FileService;
-import com.august.shared.enums.ErrorCode;
-import com.august.shared.exception.AppCustomException;
+import com.august.file.strategy.FileStrategy;
+import com.august.file.strategy.FileStrategyContext;
+import com.august.protocol.profile.FilePurpose;
+import com.august.protocol.profile.UploadFileRequest;
+import com.august.sharecore.enums.ErrorCode;
+import com.august.sharecore.exception.AppCustomException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.net.MalformedURLException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
@@ -31,17 +34,18 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class FileServiceImpl implements FileService {
     private final FileRepository fileRepository;
-    private final EmailTaskRedisService emailTaskRedisService;
     private final FileMapper fileMapper;
 
     @Value("${app.upload.directory}")
     private String uploadDictionary;
+    private final FileStrategyContext fileStrategyContext;
 
     private static final Logger logger = LoggerFactory.getLogger(FileServiceImpl.class);
 
     @Transactional
     @Override
-    public FileResponse uploadFile(MultipartFile file, String recipient) {
+    public FileResponse uploadFile(MultipartFile file){
+
         if (file.isEmpty()){
             logger.warn("File is empty. Please check method again!");
             throw new AppCustomException(ErrorCode.PAYLOAD_TOO_LARGE);
@@ -56,23 +60,9 @@ public class FileServiceImpl implements FileService {
             }
             String uniqueFileName = UUID.randomUUID() + extension;
 
-            FileEntity entity = getFileEntity(file, rootLocation, uniqueFileName, recipient);
+            FileEntity entity = getFileEntity(file, rootLocation, uniqueFileName);
 
             fileRepository.save(entity);
-
-            EmailDetailRequest request = EmailDetailRequest.builder()
-                    .recipient(recipient)
-                    .subject("Upload File/Image")
-                    .build();
-
-            EmailTaskDTO emailTaskDTO = EmailTaskDTO.builder()
-                    .status(StatusSendEmail.EMAIL_PENDING)
-                    .retryCount(0)
-                    .maxRetryCount(3)
-                    .request(request)
-                    .build();
-
-            emailTaskRedisService.save(emailTaskDTO);
 
             return fileMapper.mapToResponse(entity);
 
@@ -107,7 +97,63 @@ public class FileServiceImpl implements FileService {
         }
     }
 
-    private static FileEntity getFileEntity(MultipartFile file, Path rootLocation, String uniqueFileName, String recipient) {
+    @Override
+    public FileResponse uploadFileFromGrpc(UploadFileRequest fileRequest) {
+
+        FilePurpose purpose = fileRequest.getPurpose();
+
+        if (purpose == FilePurpose.UNKNOWN) {
+            throw new AppCustomException(ErrorCode.INVALID_FILE_PURPOSE);
+        }
+
+        //get strategy based on purpose, for example: purpose AVATAR -> get AvatarStrategy
+        FileStrategy strategy = fileStrategyContext.getStrategy(purpose);
+        strategy.validate(fileRequest);
+
+        Path rootLocation = Paths.get(uploadDictionary);
+        Path targetDirectoryPath = strategy.resolveDirectory(rootLocation, fileRequest);
+
+        try {
+            Files.createDirectories(targetDirectoryPath);
+        } catch (Exception exception) {
+            throw new RuntimeException("Cannot create upload directory", exception);
+        }
+
+        String originalFileName = fileRequest.getFileName();
+        String extension = "";
+        if (originalFileName.contains(".")) {
+            extension = originalFileName.substring(originalFileName.lastIndexOf("."));
+        }
+
+        String uniqueFileName = UUID.randomUUID() + extension;
+        Path storedFilePath = targetDirectoryPath.resolve(uniqueFileName).normalize();
+
+        try {
+            Files.write(storedFilePath, fileRequest.getFile().toByteArray());
+        } catch (Exception exception) {
+            throw new RuntimeException("Cannot write file to disk", exception);
+        }
+
+        Path destinationFile = rootLocation.resolve(uniqueFileName);
+
+        String contentType = fileRequest.getContentType();
+
+        boolean isViewable = contentType.startsWith("image/") || contentType.equals("application/pdf");
+
+        FileEntity entity = new FileEntity();
+        entity.setSize(fileRequest.getFile().size());
+        entity.setFilePath(destinationFile.toString());
+        entity.setFileName(uniqueFileName);
+        entity.setContentType(contentType);
+        entity.setViewable(isViewable);
+        entity.setOwnerId(fileRequest.getOwnerId());
+        entity.setPurpose(FilePurposeConverter.toEntity(fileRequest.getPurpose()));
+
+        return fileMapper.mapToResponse(entity);
+    }
+
+    private static FileEntity getFileEntity(MultipartFile file, Path rootLocation,
+                                            String uniqueFileName) {
         Path destinationFile = rootLocation.resolve(uniqueFileName);
 
         String contentType = file.getContentType();
@@ -121,7 +167,7 @@ public class FileServiceImpl implements FileService {
         entity.setFileName(uniqueFileName);
         entity.setContentType(file.getContentType());
         entity.setViewable(isViewable);
-        entity.setOwnerId(recipient);
+        entity.setOwnerId("123");
         return entity;
     }
 

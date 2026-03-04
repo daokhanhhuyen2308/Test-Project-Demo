@@ -2,7 +2,7 @@ package com.august.comment.mapper;
 
 import com.august.comment.dto.CommentRequest;
 import com.august.comment.dto.CommentResponse;
-import com.august.comment.entity.elasticsearch.CommentDocument;
+import com.august.comment.entity.elastic.CommentDocument;
 import com.august.comment.entity.mongodb.Comment;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

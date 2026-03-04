@@ -17,6 +17,7 @@ public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
+    private String keycloakId;
     private String username;
     private String email;
     private String password;

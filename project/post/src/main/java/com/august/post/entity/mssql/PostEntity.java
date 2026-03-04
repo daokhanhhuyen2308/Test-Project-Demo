@@ -33,8 +33,8 @@ public class PostEntity {
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-    @Column(name = "author_id", nullable = false)
-    private String authorId;
+    @Column(name = "author_keycloak_id")
+    private String authorKeycloakId;
     @Column(name = "author_username", nullable = false)
     private String authorUsername;
     private String authorAvatarUrl;
@@ -52,13 +52,13 @@ public class PostEntity {
     private List<TagEntity> tags;
     private String thumbnail;
 
-    @Column(name = "view_count", columnDefinition = "Bigint default 0")
+    @Column(name = "view_count")
     @Builder.Default
     private Long viewCount = 0L;
 
-    @Column(name = "comment_count", columnDefinition = "Int default 0")
+    @Column(name = "comment_count")
     @Builder.Default
-    private Integer commentCount = 0;
+    private Long commentCount = 0L;
 
     @Column(name = "reading_time")
     private Integer readingTime;

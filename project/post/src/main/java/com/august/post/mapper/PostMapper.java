@@ -1,7 +1,7 @@
 package com.august.post.mapper;
 
 import com.august.post.dto.*;
-import com.august.post.entity.elasticsearch.PostDocument;
+import com.august.post.entity.elastic.PostDocument;
 import com.august.post.entity.mssql.CategoryEntity;
 import com.august.post.entity.mssql.PostEntity;
 import com.august.post.entity.mssql.TagEntity;
@@ -19,7 +19,7 @@ public interface PostMapper {
 
     //request -> entity
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "authorId", ignore = true)
+    @Mapping(target = "authorKeycloakId", ignore = true)
     @Mapping(target = "authorUsername", ignore = true)
     @Mapping(target = "authorAvatarUrl", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -35,7 +35,7 @@ public interface PostMapper {
 
     //entity -> response
     @Mappings({
-                @Mapping(source = "authorId", target = "author.authorId"),
+                @Mapping(source = "authorKeycloakId", target = "author.authorId"),
                 @Mapping(source = "authorUsername", target = "author.authorUsername"),
                 @Mapping(source = "authorAvatarUrl", target = "author.authorAvatarUrl"),
                 @Mapping(source = "tags", target = "tags", qualifiedByName = "mapToTagsResponse"),
@@ -45,7 +45,7 @@ public interface PostMapper {
     PostResponse mapToPostResponse(PostEntity entity);
 
     //entity -> elastic
-    @Mapping(source = "authorId", target = "author.authorId")
+    @Mapping(source = "authorKeycloakId", target = "author.authorKeycloakId")
     @Mapping(source = "authorUsername", target = "author.authorUsername")
     @Mapping(source = "authorAvatarUrl", target = "author.authorAvatarUrl")
     @Mapping(target = "category", source = "category")
@@ -55,7 +55,7 @@ public interface PostMapper {
 
     //elastic -> response
     @Mappings({
-            @Mapping(source = "author.authorId", target = "author.authorId"),
+            @Mapping(source = "author.authorKeycloakId", target = "author.authorId"),
             @Mapping(source = "author.authorUsername", target = "author.authorUsername"),
             @Mapping(source = "author.authorAvatarUrl", target = "author.authorAvatarUrl"),
             @Mapping(target = "createdAt", ignore = true),
