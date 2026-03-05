@@ -1,10 +1,7 @@
 package com.august.profile.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 @Entity
 @NoArgsConstructor
@@ -12,12 +9,12 @@ import lombok.Setter;
 @Getter
 @Setter
 @Table(name = "profile")
+@Builder
 public class UserProfile {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
     private String keycloakId;
-    private String userId;
     private String username;
     private String email;
     private String avatarUrl;

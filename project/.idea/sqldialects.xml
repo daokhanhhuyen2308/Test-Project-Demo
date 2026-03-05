@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="SqlDialectMappings">
+    <file url="file://$PROJECT_DIR$/identity/src/main/resources/db/migration/V1__init_identity_schema.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/identity/src/main/resources/db/migration/V2__create_outbox_event.sql" dialect="GenericSQL" />
     <file url="file://$PROJECT_DIR$/notification/src/main/java/com/august/notification/repository/ProcessedEventRepository.java" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/post/src/main/resources/db/migration/V1__init_schema.sql" dialect="TSQL" />
   </component>
 </project>

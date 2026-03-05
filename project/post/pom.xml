@@ -87,10 +87,14 @@
             <version>1.19.6</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.august</groupId>
-            <artifactId>share-security</artifactId>
-        </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-core</artifactId>
+            </dependency>
+            <dependency>
+                <groupId>org.flywaydb</groupId>
+                <artifactId>flyway-sqlserver</artifactId>
+            </dependency>
     </dependencies>
     <build>
         <plugins>

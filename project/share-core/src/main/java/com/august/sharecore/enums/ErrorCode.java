@@ -45,6 +45,8 @@ public enum ErrorCode {
     INVALID_FILE_PURPOSE("E0036", "Invalid file purpose", 400),
     SEND_EMAIL_FAILED("E0037", "Send email failed", 400),
     EMAIL_DELIVERY_FAILED("E0037", "Email delivery failed, triggering retry mechanism...", 400),
+    CANNOT_SERIALIZE_EVENT("E0038", "Can not serialize event", 400),
+    CANNOT_DESERIALIZE_EVENT("E0038", "Can not deserialize event", 400),
     SUCCESS("0000", "Success", 200);
 
     private final String code;

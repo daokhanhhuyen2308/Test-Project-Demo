@@ -1,23 +1,30 @@
 spring:
   application:
-    name: profile
-  datasource:
-    url: jdbc:mysql://localhost:3306/identity?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    username: root
-    password: root
-    driver-class-name: com.mysql.cj.jdbc.Driver
-  jpa:
-    hibernate:
-      ddl-auto: validate
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
+    name: authenticate
   security:
     oauth2:
       resourceserver:
         jwt:
           issuer-uri: http://localhost:9090/realms/daokhanhhuyen
           jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/identity?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
   kafka:
     bootstrap-servers: localhost:9094
     producer:
@@ -28,7 +35,7 @@ spring:
         acks: all
 
     consumer:
-      group-id: profile-group
+      group-id: identity-group
       auto-offset-reset: earliest
       enable-auto-commit: false
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
@@ -36,21 +43,32 @@ spring:
       properties:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.trusted.packages: "com.august.sharecore.*"
-        spring.json.use.type.header: true
-#        spring.json.value.default.type: com.august.sharecore.events.user.UserRegisteredEvent
+        spring.json.use.type.headers: true
+
     listener:
       ack-mode: manual_immediate
 
-server:
-  port: 8083
-
 grpc:
-  server:
-    port: 9091
   client:
-    file-service-grpc:
-      address: static://localhost:9000
-      negotiation-type: PLAINTEXT
+    profile-service-grpc:
+      address: 'static://localhost:9091'
+      negotiationType: PLAINTEXT
+
+token:
+  secret:
+    key: KeeEJMJOdFjvXwgqeVbypXR1Kynj93lOXS2Dpk5C4HTG3N96Hmvsrwng25CcVzpE
+
+access:
+  token:
+    expired: 1800000
+
+ADMIN:
+  USER_NAME: admin
+
+MAX_LOGIN_FAILED_ATTEMPTS: 5
+LOCK_DURATION: 5
+server:
+  port: 8081
 
 keycloak:
   serverUrl: http://localhost:9090

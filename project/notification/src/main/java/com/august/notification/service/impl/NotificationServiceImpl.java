@@ -2,7 +2,7 @@ package com.august.notification.service.impl;
 
 import com.august.notification.dto.EmailDetailRequest;
 import com.august.notification.enums.EventStatus;
-import com.august.notification.events.UserRegisteredEvent;
+import com.august.sharecore.events.UserRegisteredEvent;
 import com.august.notification.repository.ProcessedEventRepository;
 import com.august.notification.service.EmailService;
 import com.august.notification.service.NotificationService;
@@ -25,7 +25,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void processUserRegistration(UserRegisteredEvent event) {
 
-        String eventId = event.getEventId();
+        String eventId = event.eventId();
         processedEventRepository.claim(eventId);
 
         if (processedEventRepository.getStatus(eventId) == EventStatus.PROCESSED){
@@ -35,10 +35,10 @@ public class NotificationServiceImpl implements NotificationService {
 
         try{
             EmailDetailRequest request = EmailDetailRequest.builder()
-                    .subject("Welcome to " +event.getUsername())
-                    .msgBody("Hi " + event.getUsername() + ",\n\n" +
-                            "Your account has been successfully created at " + event.getCreatedAt())
-                    .recipient(event.getEmail())
+                    .subject("Welcome to " +event.username())
+                    .msgBody("Hi " + event.username() + ",\n\n" +
+                            "Your account has been successfully created at " + event.createdAt())
+                    .recipient(event.email())
                     .build();
 
             emailService.sendEmail(request);

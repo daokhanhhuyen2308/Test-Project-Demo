@@ -16,7 +16,7 @@
 
     <modules>
         <module>share-security</module>
-        <module>authenticate</module>
+        <module>identity</module>
         <module>file</module>
         <module>gateway</module>
         <module>profile</module>
