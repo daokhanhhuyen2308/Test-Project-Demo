@@ -2,7 +2,7 @@ package com.august.file.grpc;
 
 import com.august.file.dto.responses.FileResponse;
 import com.august.file.service.FileService;
-import com.august.protocol.profile.*;
+import com.august.protocol.file.*;
 import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import net.devh.boot.grpc.server.service.GrpcService;

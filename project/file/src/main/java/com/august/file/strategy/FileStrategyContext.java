@@ -1,6 +1,6 @@
 package com.august.file.strategy;
 
-import com.august.protocol.profile.FilePurpose;
+import com.august.protocol.file.FilePurpose;
 import org.springframework.stereotype.Component;
 
 import java.util.List;

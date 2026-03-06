@@ -1,6 +1,6 @@
 spring:
   application:
-    name: authenticate
+    name: identity
   security:
     oauth2:
       resourceserver:
@@ -29,7 +29,7 @@ spring:
     bootstrap-servers: localhost:9094
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
       properties:
         enable.idempotence: true
         acks: all
@@ -43,7 +43,8 @@ spring:
       properties:
         spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
         spring.json.trusted.packages: "com.august.sharecore.*"
-        spring.json.use.type.headers: true
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.august.sharecore.events.ProfileCreatedEvent
 
     listener:
       ack-mode: manual_immediate
@@ -61,9 +62,6 @@ token:
 access:
   token:
     expired: 1800000
-
-ADMIN:
-  USER_NAME: admin
 
 MAX_LOGIN_FAILED_ATTEMPTS: 5
 LOCK_DURATION: 5

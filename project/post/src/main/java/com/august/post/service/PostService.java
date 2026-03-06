@@ -20,5 +20,5 @@ public interface PostService {
 
     List<PostResponse> getRelatedPosts(Long postId);
 
-    PostResponse uploadThumbnail(String postId, MultipartFile file);
+    PostResponse uploadThumbnail(Long postId, MultipartFile thumbnail);
 }

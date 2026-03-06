@@ -8,6 +8,7 @@ import com.august.notification.service.EmailService;
 import com.august.notification.service.NotificationService;
 import com.august.sharecore.enums.ErrorCode;
 import com.august.sharecore.exception.AppCustomException;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,15 +18,15 @@ import java.time.Instant;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class NotificationServiceImpl implements NotificationService {
-
     private final EmailService emailService;
     private final ProcessedEventRepository processedEventRepository;
 
     @Override
     public void processUserRegistration(UserRegisteredEvent event) {
 
-        String eventId = event.eventId();
+        String eventId = event.getEventId();
         processedEventRepository.claim(eventId);
 
         if (processedEventRepository.getStatus(eventId) == EventStatus.PROCESSED){
@@ -35,10 +36,10 @@ public class NotificationServiceImpl implements NotificationService {
 
         try{
             EmailDetailRequest request = EmailDetailRequest.builder()
-                    .subject("Welcome to " +event.username())
-                    .msgBody("Hi " + event.username() + ",\n\n" +
-                            "Your account has been successfully created at " + event.createdAt())
-                    .recipient(event.email())
+                    .subject("Welcome to " +event.getUsername())
+                    .msgBody("Hi " + event.getUsername() + ",\n\n" +
+                            "Your account has been successfully created at " + event.getCreatedAt())
+                    .recipient(event.getEmail())
                     .build();
 
             emailService.sendEmail(request);

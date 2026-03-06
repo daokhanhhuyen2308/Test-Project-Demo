@@ -2,6 +2,7 @@ package com.august.notification.repository;
 
 import com.august.notification.entity.ProcessedEvent;
 import com.august.notification.enums.EventStatus;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -17,14 +18,14 @@ public interface ProcessedEventRepository extends JpaRepository<ProcessedEvent, 
     @Modifying
     @Query(value = """
     insert into process_event (event_id, updated_at, attempts, last_error, status)
-    values (:eventId, NOW(), 1, NULL, 'PROCESSING')
+    values (:eventId, now(), 1, null, 'PROCESSING')
     on duplicate key update status = if(status = 'PROCESSED', status, 'PROCESSING'),
                             attempts = if(status = 'PROCESSED', attempts, attempts + 1),
                             updated_at = now()
     """, nativeQuery = true)
     void claim(@Param("eventId") String eventId);
 
-    @Query(value = "select p.status from ProcessedEvent p where p.eventId = :eventId")
+    @Query("select p.status from ProcessedEvent p where p.eventId = :eventId")
     EventStatus getStatus(@Param("eventId") String eventId);
 
     @Modifying

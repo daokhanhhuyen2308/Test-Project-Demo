@@ -10,6 +10,7 @@ import com.august.identity.enums.AggregateType;
 import com.august.identity.enums.EventTopic;
 import com.august.identity.enums.OutboxStatus;
 import com.august.identity.enums.UserStatus;
+import com.august.identity.events.OutboxNotificationEvent;
 import com.august.sharecore.events.ProfileCreatedEvent;
 import com.august.sharecore.events.UserRegisteredEvent;
 import com.august.identity.mapper.UserMapper;
@@ -30,10 +31,11 @@ import org.keycloak.representations.idm.CredentialRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 
@@ -52,6 +54,7 @@ public class UserServiceImpl implements UserService {
 
     private final OutboxEventRepository outboxEventRepository;
     private final ObjectMapper objectMapper;
+    private final ApplicationEventPublisher applicationEventPublisher;
 
     @Override
     @Transactional
@@ -110,8 +113,16 @@ public class UserServiceImpl implements UserService {
             user.setUserStatus(UserStatus.PENDING_PROFILE);
             userRepository.save(user);
 
-            UserRegisteredEvent event = new UserRegisteredEvent(keycloakUserId, user.getEmail(), user.getEmail(),
-                    user.getUsername(), user.getAvatarUrl(), "IDENTITY_SERVICE", LocalDateTime.now());
+            String commonId = UUID.randomUUID().toString();
+
+            UserRegisteredEvent event = UserRegisteredEvent.builder()
+                    .eventId(commonId)
+                    .keycloakId(keycloakUserId)
+                    .email(user.getEmail())
+                    .username(user.getUsername())
+                    .source("IDENTITY_SERVICE")
+                    .createdAt(Instant.now())
+                    .build();
 
             String payloadJson;
 
@@ -122,6 +133,7 @@ public class UserServiceImpl implements UserService {
             }
 
             OutboxEvent outboxEvent = OutboxEvent.builder()
+                    .id(commonId)
                     .aggregateType(AggregateType.USER)
                     .aggregateId(keycloakUserId)
                     .payload(payloadJson)
@@ -130,6 +142,7 @@ public class UserServiceImpl implements UserService {
                     .build();
 
             outboxEventRepository.save(outboxEvent);
+            applicationEventPublisher.publishEvent(new OutboxNotificationEvent(commonId));
 
             return userMapper.mapToResponse(user);
         }
@@ -138,14 +151,14 @@ public class UserServiceImpl implements UserService {
     @Transactional
     @Override
     public void consumerProfileCreated(ProfileCreatedEvent event) {
-            String keycloakId = event.keycloakId();
+            String keycloakId = event.getKeycloakId();
             int updated = userRepository.updateStatusByKeycloakId(UserStatus.ACTIVE, keycloakId);
         if (updated == 0) {
-            log.warn("ProfileCreated received but user not found. keycloakId={}", event.keycloakId());
+            log.warn("ProfileCreated received but user not found. keycloakId={}", event.getKeycloakId());
             return;
         }
 
-        log.info("User status updated to ACTIVE. keycloakId={}", event.keycloakId());
+        log.info("User status updated to ACTIVE. keycloakId={}", event.getKeycloakId());
     }
 
     private UserRepresentation getUserRepresentation(UserCreateRequest request, RealmResource realmResource) {

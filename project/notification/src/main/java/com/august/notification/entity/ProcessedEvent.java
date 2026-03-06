@@ -14,7 +14,7 @@ import java.time.Instant;
 @Table(name = "process_event")
 public class ProcessedEvent {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.UUID)
     private String eventId;
     @Enumerated(value = EnumType.STRING)
     private EventStatus status;

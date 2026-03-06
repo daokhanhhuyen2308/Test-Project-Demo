@@ -40,7 +40,7 @@ public interface PostMapper {
                 @Mapping(source = "authorAvatarUrl", target = "author.authorAvatarUrl"),
                 @Mapping(source = "tags", target = "tags", qualifiedByName = "mapToTagsResponse"),
                 @Mapping(source = "category", target = "category", qualifiedByName = "mapToCategoryResponse"),
-                @Mapping(target = "createdAt", ignore = true)
+                @Mapping(target = "createdAt", ignore = true),
     })
     PostResponse mapToPostResponse(PostEntity entity);
 

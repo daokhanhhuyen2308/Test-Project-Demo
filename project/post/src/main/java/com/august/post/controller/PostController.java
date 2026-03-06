@@ -43,10 +43,10 @@ public class PostController {
     }
 
     @PostMapping("/{postId}/upload-thumbnail")
-    public ApiResponse<PostResponse> uploadThumbnail(@PathVariable String postId,
-                                                     @RequestParam MultipartFile file){
+    public ApiResponse<PostResponse> uploadThumbnail(@PathVariable Long postId,
+                                                     @RequestParam MultipartFile thumbnail){
         return ApiResponse.<PostResponse>builder()
-                .result(postService.uploadThumbnail(postId, file))
+                .result(postService.uploadThumbnail(postId, thumbnail))
                 .build();
     }
 

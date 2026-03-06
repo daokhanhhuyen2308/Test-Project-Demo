@@ -12,7 +12,6 @@ public interface ProfileRepository extends JpaRepository<UserProfile, String> {
     @Query("select p from UserProfile p where p.keycloakId = :keycloakId")
     UserProfile findByKeycloakId(@Param("keycloakId") String keycloakId);
 
-    @Query("select p from UserProfile p where p.keycloakId = :keycloakId")
-    boolean existsByKeycloakId(@Param("keycloakId") String keycloakId);
+    boolean existsByKeycloakId(String keycloakId);
 
 }

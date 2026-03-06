@@ -2,6 +2,10 @@ package com.august.profile.service.impl;
 
 import com.august.profile.dto.ProfileResponse;
 import com.august.profile.entity.UserProfile;
+import com.august.protocol.file.FilePurpose;
+import com.august.protocol.file.FileServiceGrpc;
+import com.august.protocol.file.UploadFileRequest;
+import com.august.protocol.file.UploadFileResponse;
 import com.august.sharecore.events.ProfileCreatedEvent;
 import com.august.sharecore.events.UserRegisteredEvent;
 import com.august.profile.mapper.ProfileMapper;
@@ -27,7 +31,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 
 @Slf4j
@@ -100,15 +104,15 @@ public class ProfileServiceImpl implements ProfileService {
 
     @Override
     public void createProfileForUserRegistered(UserRegisteredEvent event) {
-        if (profileRepository.existsByKeycloakId(event.keycloakId())) {
+        if (profileRepository.existsByKeycloakId(event.getKeycloakId())) {
             return;
         }
 
         UserProfile profile = UserProfile.builder()
-                .email(event.email())
-                .username(event.username())
-                .keycloakId(event.keycloakId())
-                .avatarUrl(event.avatarUrl())
+                .email(event.getEmail())
+                .username(event.getUsername())
+                .keycloakId(event.getKeycloakId())
+                .avatarUrl(event.getAvatarUrl())
                 .build();
 
         profileRepository.save(profile);
@@ -116,7 +120,7 @@ public class ProfileServiceImpl implements ProfileService {
         try{
 
             ProfileCreatedEvent profileCreatedEvent = new ProfileCreatedEvent(profile.getId(),
-                    profile.getKeycloakId(), "PROFILE_SERVICE", LocalDateTime.now());
+                    profile.getKeycloakId(), "PROFILE_SERVICE", Instant.now());
             kafkaTemplate.send("profile-created", profile.getKeycloakId(), profileCreatedEvent)
                     .whenComplete((result, ex) -> {
                         if (ex == null){
@@ -129,7 +133,6 @@ public class ProfileServiceImpl implements ProfileService {
         } catch (Exception e) {
             throw new AppCustomException(ErrorCode.CANNOT_SERIALIZE_EVENT);
         }
-
 
     }
 }

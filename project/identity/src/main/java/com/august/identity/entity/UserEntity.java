@@ -17,10 +17,13 @@ import java.util.Set;
 public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "CHAR(36)", updatable = false, nullable = false)
+    @Column(length = 36, updatable = false, nullable = false)
     private String id;
+    @Column(nullable = false)
     private String keycloakId;
+    @Column(nullable = false, unique = true)
     private String username;
+    @Column(nullable = false, unique = true)
     private String email;
     @Enumerated(value = EnumType.STRING)
     private UserStatus userStatus;

@@ -1,0 +1,1 @@
+alter table profile modify id varchar(36) not null

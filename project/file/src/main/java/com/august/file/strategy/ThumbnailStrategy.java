@@ -1,8 +1,8 @@
 package com.august.file.strategy;
 
-import com.august.protocol.profile.FilePurpose;
-import com.august.protocol.profile.UploadFileRequest;
 
+import com.august.protocol.file.FilePurpose;
+import com.august.protocol.file.UploadFileRequest;
 import com.august.sharecore.enums.ErrorCode;
 import com.august.sharecore.exception.AppCustomException;
 import org.springframework.stereotype.Component;

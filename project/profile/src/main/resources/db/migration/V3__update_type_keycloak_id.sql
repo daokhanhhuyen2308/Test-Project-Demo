@@ -1,0 +1,1 @@
+alter table profile modify keycloak_id varchar(100) not null

@@ -13,30 +13,35 @@ import java.util.List;
 @AllArgsConstructor
 @Getter
 @Setter
-@Table(name = "posts", indexes = {
+@Table(name = "post", indexes = {
         @Index(name = "idx_post_slug", columnList = "slug", unique = true),
         @Index(name = "idx_post_author_username", columnList = "author_username"),
-        @Index(name = "idx_created_at", columnList = "createdAt")
+        @Index(name = "idx_post_created_at", columnList = "created_at")
 })
 @Builder
 public class PostEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(nullable = false)
     private String title;
+    @Column(nullable = false)
     private String slug;
-    @Column(length = 500)
+    @Column(length = 500, nullable = false)
     private String summary;
-    @Column(columnDefinition = "NVARCHAR(MAX)")
+    @Column(columnDefinition = "NVARCHAR(MAX)", nullable = false)
     private String content;
     @CreationTimestamp
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
     @UpdateTimestamp
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-    @Column(name = "author_keycloak_id")
+    @Column(name = "author_keycloak_id", nullable = false)
     private String authorKeycloakId;
     @Column(name = "author_username", nullable = false)
     private String authorUsername;
+    @Column(name = "author_avatar_url")
     private String authorAvatarUrl;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -64,6 +69,7 @@ public class PostEntity {
     private Integer readingTime;
 
     @Builder.Default
+    @Column(name = "is_deleted")
     private Boolean isDeleted = false;
 
 }

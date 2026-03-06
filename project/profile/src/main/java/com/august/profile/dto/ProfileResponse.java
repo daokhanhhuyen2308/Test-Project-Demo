@@ -12,7 +12,6 @@ public class ProfileResponse {
     @JsonProperty("profile_id")
     private String profileId;
     private String keycloakId;
-    private String userId;
     private String username;
     private String email;
     private String avatarUrl;

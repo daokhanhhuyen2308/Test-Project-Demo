@@ -41,12 +41,14 @@ public enum ErrorCode {
     ATTACHMENT_IS_EMPTY("E0032", "Attach file is empty", 400),
     AVATAR_FAIL_TOO_LARGE("E0033", "AVATAR file is too large. max=2MB.", 400),
     THUMBNAIL_FAIL_TOO_LARGE("E0034", "THUMBNAIL file is too large. max=5MB.", 400),
-    ATTACHMENT_FAIL_TOO_LARGE("E0035", "ATTACHMENT file is too large. max=20MB", 400),
-    INVALID_FILE_PURPOSE("E0036", "Invalid file purpose", 400),
-    SEND_EMAIL_FAILED("E0037", "Send email failed", 400),
+    ATTACHMENT_FAIL_TOO_LARGE("E0035", "ATTACHMENT file is too large. max=20MB.", 400),
+    INVALID_FILE_PURPOSE("E0036", "Invalid file purpose.", 400),
+    SEND_EMAIL_FAILED("E0037", "Send email failed.", 400),
     EMAIL_DELIVERY_FAILED("E0037", "Email delivery failed, triggering retry mechanism...", 400),
-    CANNOT_SERIALIZE_EVENT("E0038", "Can not serialize event", 400),
-    CANNOT_DESERIALIZE_EVENT("E0038", "Can not deserialize event", 400),
+    CANNOT_SERIALIZE_EVENT("E0038", "Can not serialize event.", 400),
+    CANNOT_DESERIALIZE_EVENT("E0038", "Can not deserialize event.", 400),
+    POST_NOT_FOUND_BY_ID("E0039", "Could not be found post by post id.", 404),
+    UNAUTHORIZED_UPDATE_POST("E0040", "Only the post owner is authorized to update this post.", 403),
     SUCCESS("0000", "Success", 200);
 
     private final String code;

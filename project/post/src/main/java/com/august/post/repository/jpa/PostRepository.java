@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Optional;
 
 @Repository
-public interface PostRepository extends JpaRepository<PostEntity, String> {
+public interface PostRepository extends JpaRepository<PostEntity, Long> {
     Optional<PostEntity> findBySlug(String slug);
 
     @Modifying

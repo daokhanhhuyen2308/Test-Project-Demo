@@ -4,7 +4,10 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.TextQueryType;
 import co.elastic.clients.json.JsonData;
 import com.august.post.repository.elastic.PostElasticSearchRepo;
-import com.august.protocol.profile.FileServiceGrpc;
+import com.august.protocol.file.FilePurpose;
+import com.august.protocol.file.FileServiceGrpc;
+import com.august.protocol.file.UploadFileRequest;
+import com.august.protocol.file.UploadFileResponse;
 import com.august.sharecore.dto.ApiResponse;
 import com.august.sharecore.dto.PageResponse;
 import com.august.sharecore.enums.ErrorCode;
@@ -25,7 +28,9 @@ import com.august.post.repository.jpa.TagRepository;
 import com.august.post.service.PostService;
 import com.august.post.utils.SlugUtils;
 import com.august.sharesecurity.utils.SecurityUtils;
+import com.google.protobuf.ByteString;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.client.inject.GrpcClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
@@ -39,6 +44,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -46,6 +52,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PostServiceImpl implements PostService {
     private final PostRepository postRepository;
     private final PostMapper postMapper;
@@ -59,7 +66,7 @@ public class PostServiceImpl implements PostService {
     private String KEY_VIEW_COUNT;
     private final SecurityUtils securityUtils;
     @GrpcClient("file-service-grpc")
-    private final FileServiceGrpc.FileServiceBlockingStub fileStub;
+    private FileServiceGrpc.FileServiceBlockingStub fileStub;
 
     @Override
     public ApiResponse<PostResponse> createPost(PostCreationRequest request) {
@@ -217,8 +224,38 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public PostResponse uploadThumbnail(String postId, MultipartFile file) {
-        return null;
+    public PostResponse uploadThumbnail(Long postId, MultipartFile thumbnail) {
+        try {
+            AuthCurrentUser currentUser = securityUtils.getCurrentUser();
+
+            PostEntity postEntity = postRepository.findById(postId)
+                    .orElseThrow(() -> new AppCustomException(ErrorCode.POST_NOT_FOUND_BY_ID));
+
+            if (!postEntity.getAuthorKeycloakId().equals(currentUser.getKeycloakId())) {
+                log.warn("User {} tried to update thumbnail of post {} owned by {}",
+                        currentUser.getKeycloakId(), postId, postEntity.getAuthorKeycloakId());
+                throw new AppCustomException(ErrorCode.UNAUTHORIZED_UPDATE_POST);
+            }
+
+            UploadFileRequest request = UploadFileRequest.newBuilder()
+                    .setFile(ByteString.copyFrom(thumbnail.getBytes()))
+                    .setFileName(thumbnail.getOriginalFilename())
+                    .setContentType(thumbnail.getContentType())
+                    .setOwnerId(currentUser.getKeycloakId())
+                    .setPurpose(FilePurpose.THUMBNAIL)
+                    .build();
+
+            UploadFileResponse response = fileStub.uploadFile(request);
+
+            String thumbnailUrl = response.getUrl();
+            postEntity.setThumbnail(thumbnailUrl);
+            postRepository.save(postEntity);
+
+            return postMapper.mapToPostResponse(postEntity);
+
+        } catch (IOException e) {
+            throw new AppCustomException(ErrorCode.UPLOAD_FAILED);
+        }
     }
 
     private int calculateReadingTime(String content){

@@ -1,7 +1,7 @@
 package com.august.file.strategy;
 
-import com.august.protocol.profile.FilePurpose;
-import com.august.protocol.profile.UploadFileRequest;
+import com.august.protocol.file.FilePurpose;
+import com.august.protocol.file.UploadFileRequest;
 
 import java.nio.file.Path;
 

@@ -2,12 +2,11 @@ package com.august.notification.consumer;
 
 import com.august.notification.service.NotificationService;
 import com.august.sharecore.events.UserRegisteredEvent;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
-import org.springframework.kafka.annotation.RetryableTopic;
-import org.springframework.kafka.retrytopic.DltStrategy;
-import org.springframework.retry.annotation.Backoff;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -15,15 +14,21 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class NotificationConsumer {
     private final NotificationService notificationService;
+    private final ObjectMapper objectMapper;
+    @KafkaListener(topics = "user-registered-v2", groupId = "notification-group")
+    public void consumerUserRegistered(String message, Acknowledgment ack){
+        try {
+            log.info("Raw message: {}", message);
 
-    @RetryableTopic(
-            attempts = "5",
-            backoff = @Backoff(delay = 2000, multiplier = 2.0, maxDelay = 60000),
-            dltStrategy = DltStrategy.FAIL_ON_ERROR
-    )
-    @KafkaListener(topics = "user-registered", groupId = "notification-group")
-    public void consumerUserRegistered(UserRegisteredEvent event){
-        log.info("Consumer received event: {}", event.eventId());
-        notificationService.processUserRegistration(event);
+            UserRegisteredEvent event = objectMapper.readValue(message, UserRegisteredEvent.class);
+
+            log.info("Consumer received event: {}", event.getEventId());
+            notificationService.processUserRegistration(event);
+
+            ack.acknowledge();
+        } catch (Exception e) {
+            log.error("Failed to consume user-registered message", e);
+            throw new RuntimeException(e);
+        }
     }
 }
