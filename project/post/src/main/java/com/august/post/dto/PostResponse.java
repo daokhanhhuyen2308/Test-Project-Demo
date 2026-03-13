@@ -24,5 +24,6 @@ public class PostResponse {
     private Integer readingTime;
     private String createdAt;
     private Boolean isDeleted;
-
+    private Long favoriteCount;
+    private Boolean isFavorited;
 }

@@ -49,6 +49,10 @@ public enum ErrorCode {
     CANNOT_DESERIALIZE_EVENT("E0038", "Can not deserialize event.", 400),
     POST_NOT_FOUND_BY_ID("E0039", "Could not be found post by post id.", 404),
     UNAUTHORIZED_UPDATE_POST("E0040", "Only the post owner is authorized to update this post.", 403),
+    PROCESSED_EVENT_NOT_FOUND("E0041", "Processed event not found by id.", 404),
+    FILE_NOT_FOUND("E0043", "File not found by id.", 404),
+    PROFILE_NOT_FOUND_BY_USERNAME("E0043", "Profile not found by username.", 404),
+    PROFILE_NOT_FOUND_BY_ID("E0043", "Profile not found by id.", 405),
     SUCCESS("0000", "Success", 200);
 
     private final String code;

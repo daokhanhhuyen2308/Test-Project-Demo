@@ -1,0 +1,4 @@
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://huyen_dev:ukGdXzeWQYQP1SnM@my-microservices.jgj6d9d.mongodb.net/comment_db?appName=My-microservices

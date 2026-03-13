@@ -4,9 +4,9 @@ import com.august.comment.dto.CommentRequest;
 import com.august.comment.dto.CommentResponse;
 import com.august.comment.entity.elastic.CommentDocument;
 import com.august.comment.entity.mongodb.Comment;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.Mappings;
+import org.mapstruct.*;
+
+import java.time.LocalDateTime;
 
 @Mapper(componentModel = "spring")
 public interface CommentMapper {
@@ -31,7 +31,6 @@ public interface CommentMapper {
         @Mapping(target = "authorAvatarUrl", ignore = true),
         @Mapping(target = "updatedAt", ignore = true),
         @Mapping(target = "createdAt", ignore = true),
-        @Mapping(target = "postSlug", ignore = true),
         @Mapping(target = "replyCount", ignore = true)
     })
     Comment mapToComment(CommentRequest request);

@@ -10,5 +10,5 @@ public interface CommentService {
 
     PageResponse<CommentResponse> getAllCommentReplies(CommentPaginationFilter filter);
 
-    PageResponse<CommentResponse> getAllCommentsBySlug(CommentPaginationFilter filter, String slug);
+    PageResponse<CommentResponse> getAllCommentsByPostId(CommentPaginationFilter filter, Long postId);
 }

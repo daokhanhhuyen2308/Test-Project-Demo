@@ -1,7 +1,7 @@
 package com.august.file.controller;
 
-import com.august.file.dto.requests.FileDownloadDTO;
-import com.august.file.dto.responses.FileResponse;
+import com.august.file.dto.FileDownloadDTO;
+import com.august.file.dto.FileResponse;
 import com.august.file.service.FileService;
 import com.august.sharecore.enums.ErrorCode;
 import com.august.sharecore.exception.AppCustomException;

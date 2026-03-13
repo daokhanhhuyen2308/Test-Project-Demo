@@ -20,10 +20,9 @@ public class FileEntity {
     private long size;
     private Instant uploadedAt;
     private String contentType;
-    private boolean isViewable;
+    private boolean viewable;
     private FilePurposeEntity purpose;
     public FileEntity() {
         this.uploadedAt = Instant.now();
     }
-
 }

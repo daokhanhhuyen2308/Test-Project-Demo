@@ -12,4 +12,9 @@ public class AppCustomException extends RuntimeException{
         this.errorCode = errorCode;
     }
 
+    public AppCustomException(ErrorCode errorCode, Object detail) {
+        super(errorCode.getMessage() + ": " + detail);
+        this.errorCode = errorCode;
+    }
+
 }

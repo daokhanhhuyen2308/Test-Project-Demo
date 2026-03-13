@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: newsfeed
+
+  kafka:
+    consumer:
+      key-deserializer:
+      value-deserializer:
+
+server:
+  port: 8089

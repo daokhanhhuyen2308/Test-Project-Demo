@@ -19,4 +19,13 @@ public class ApiResponse<T> {
     private T result;
     private String trace;
 
+    public static <T> ApiResponse<T> success(T result, String message) {
+        return ApiResponse.<T>builder()
+                .status(200)
+                .code("1000")
+                .message(message)
+                .result(result)
+                .build();
+    }
+
 }

@@ -27,9 +27,8 @@ public class OutboxPublisher {
     public void publishEventPending(){
 
         Instant timeLimit = Instant.now().minusSeconds(20);
-        List<OutboxEvent> events = outboxEventRepository.findAllPendingOlderThan(
-                OutboxStatus.PENDING,
-                timeLimit,
+        List<OutboxEvent> events = outboxEventRepository.findEventsToRetry(timeLimit,
+                List.of(OutboxStatus.PENDING, OutboxStatus.FAILED),
                 PageRequest.of(0, 30));
 
         if (events.isEmpty()) return;
@@ -44,12 +43,14 @@ public class OutboxPublisher {
                         kafkaTemplate.send(TOPIC, event.getAggregateId(), payload)
                                 .whenComplete((result, ex) -> {
                                     if (ex == null){
-                                        outboxService.updateOutboxStatus(event.getId(), OutboxStatus.SENT, null);
+                                        outboxService.updateOutboxStatus(event.getId(), OutboxStatus.SENT,
+                                                null, event.getRetryCount());
                                         log.info("Published {} to topic {}", event.getAggregateType(), TOPIC);
                                     }
                                     else {
+                                        int newRetry = event.getRetryCount() + 1;
                                         outboxService.updateOutboxStatus(event.getId(), OutboxStatus.FAILED,
-                                                ex.getMessage());
+                                                ex.getMessage(), newRetry);
                                         event.setLastError(ex.getMessage());
                                         log.error("Publish failed for {}: {}", event.getAggregateType(),
                                                 ex.getMessage());
@@ -59,7 +60,8 @@ public class OutboxPublisher {
 
                         log.info("Publisher event {} to topic: {}", event.getAggregateType(), TOPIC);
                     } catch (Exception e) {
-                        outboxService.updateOutboxStatus(event.getId(), OutboxStatus.FAILED, e.getMessage());
+                        outboxService.updateOutboxStatus(event.getId(), OutboxStatus.FAILED, e.getMessage(),
+                                event.getRetryCount() + 1);
                         log.error("Outbox parse/publish failed: {}", e.getMessage(), e);
                     }
                 });

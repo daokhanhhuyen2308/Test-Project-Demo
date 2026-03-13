@@ -1,10 +1,15 @@
 package com.august.profile.config;
 
+import com.august.sharesecurity.config.SharedJwtSecurityConfig;
 import com.august.sharesecurity.exception.CustomAccessDenied;
 import com.august.sharesecurity.exception.CustomAuthEntryPoint;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -17,6 +22,7 @@ import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
 @EnableWebSecurity
+@Import(SharedJwtSecurityConfig.class)
 public class SecurityConfig {
 
         @Bean
@@ -42,11 +48,9 @@ public class SecurityConfig {
                                 .cors(AbstractHttpConfigurer::disable)
                                 .csrf(AbstractHttpConfigurer::disable)
                                 .authorizeHttpRequests(
-                                                auth -> auth.anyRequest()
-                                                                .authenticated());
+                                                auth -> auth.anyRequest().authenticated());
                 httpSecurity.oauth2ResourceServer(
-                                oauth2 -> oauth2.jwt(
-                                                jwtConfigurer -> jwtConfigurer.jwtAuthenticationConverter(converter())));
+                                oauth2 -> oauth2.jwt(Customizer.withDefaults()));
 
                 httpSecurity.exceptionHandling(
                                 exception -> {
@@ -57,17 +61,6 @@ public class SecurityConfig {
                 httpSecurity.sessionManagement(
                                 session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
                 return httpSecurity.build();
-
-        }
-
-        @Bean
-        public JwtAuthenticationConverter converter() {
-                JwtGrantedAuthoritiesConverter authoritiesConverter = new JwtGrantedAuthoritiesConverter();
-                authoritiesConverter.setAuthorityPrefix("ROLE_");
-                authoritiesConverter.setAuthoritiesClaimName("scope");
-                JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-                converter.setJwtGrantedAuthoritiesConverter(authoritiesConverter);
-                return converter;
 
         }
 

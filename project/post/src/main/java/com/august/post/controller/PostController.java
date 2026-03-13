@@ -6,8 +6,10 @@ import com.august.post.dto.PostPaginationFilter;
 import com.august.post.dto.PostResponse;
 import com.august.post.service.PostService;
 import com.august.sharecore.dto.ApiResponse;
+import com.august.sharecore.enums.ErrorCode;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -31,25 +33,33 @@ public class PostController {
     }
 
     @GetMapping("/query")
-    public ApiResponse<PageResponse<PostResponse>> searchPosts(@ModelAttribute PostPaginationFilter filter) throws IOException {
-        return postService.searchPosts(filter);
+    public ApiResponse<PageResponse<PostResponse>> searchPosts(@ModelAttribute PostPaginationFilter filter)
+            throws IOException {
+        return ApiResponse.success(postService.searchPosts(filter),
+                ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getMessage());
     }
 
     @GetMapping("/{postId}/related")
     public ApiResponse<List<PostResponse>> getRelatedPosts(@PathVariable Long postId){
         ApiResponse<List<PostResponse>> response = new ApiResponse<>();
         response.setResult(postService.getRelatedPosts(postId));
-        return response;
+        return ApiResponse.success(postService.getRelatedPosts(postId),
+                "Retrieve successfully the related post by postId" + postId);
     }
 
-    @PostMapping("/{postId}/upload-thumbnail")
+    @PostMapping(value = "/{postId}/upload-thumbnail", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ApiResponse<PostResponse> uploadThumbnail(@PathVariable Long postId,
                                                      @RequestParam MultipartFile thumbnail){
-        return ApiResponse.<PostResponse>builder()
-                .result(postService.uploadThumbnail(postId, thumbnail))
-                .build();
+        return ApiResponse.success(postService.uploadThumbnail(postId, thumbnail),
+                "Upload thumbnail successfully");
     }
 
+    @PostMapping("/{postId}/favorite")
+    public ApiResponse<PostResponse> toggleFavorite(@PathVariable Long postId){
+        PostResponse postResponse = postService.toggleFavorite(postId);
+        return ApiResponse.success(postResponse, postResponse.getIsFavorited() ?
+                "You favorited this post" : "You unfavorited this post");
 
+    }
 
 }

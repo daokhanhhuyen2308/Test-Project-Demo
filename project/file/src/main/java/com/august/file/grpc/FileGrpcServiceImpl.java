@@ -1,6 +1,6 @@
 package com.august.file.grpc;
 
-import com.august.file.dto.responses.FileResponse;
+import com.august.file.dto.FileResponse;
 import com.august.file.service.FileService;
 import com.august.protocol.file.*;
 import io.grpc.stub.StreamObserver;
@@ -36,10 +36,5 @@ public class FileGrpcServiceImpl extends FileServiceGrpc.FileServiceImplBase {
             responseObserver.onNext(uploadFileResponse);
             responseObserver.onCompleted();
         }
-    }
-
-    @Override
-    public void deleteFile(DeleteFileRequest request, StreamObserver<DeleteFileResponse> responseObserver) {
-        super.deleteFile(request, responseObserver);
     }
 }

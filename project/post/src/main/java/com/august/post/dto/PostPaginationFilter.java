@@ -17,6 +17,8 @@ public class PostPaginationFilter {
     private int size = 10;
     private String keyword;
     private String authorUsername;
+    private String category;
+    private String tag;
     @Builder.Default
     private boolean sortDesc = true;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)

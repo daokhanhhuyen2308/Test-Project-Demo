@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: share-security
+
+KEYCLOAK_RESOURCE_ID: web-app-demo

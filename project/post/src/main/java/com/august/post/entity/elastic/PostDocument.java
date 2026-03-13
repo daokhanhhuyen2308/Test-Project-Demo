@@ -2,10 +2,7 @@ package com.august.post.entity.elastic;
 
 import lombok.*;
 import org.springframework.data.annotation.Id;
-import org.springframework.data.elasticsearch.annotations.DateFormat;
-import org.springframework.data.elasticsearch.annotations.Document;
-import org.springframework.data.elasticsearch.annotations.Field;
-import org.springframework.data.elasticsearch.annotations.FieldType;
+import org.springframework.data.elasticsearch.annotations.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -41,6 +38,7 @@ public class PostDocument {
     private String thumbnail;
     private Long commentCount;
     private Integer readingTime;
+    private Integer favoriteCount;
 
     @Getter
     @Builder
@@ -49,7 +47,12 @@ public class PostDocument {
     public static class CategoryEmbed {
         private Long id;
 
-        @Field(type = FieldType.Keyword)
+        @MultiField(
+                mainField = @Field(type = FieldType.Text, analyzer = "standard"),
+                otherFields = {
+                        @InnerField(suffix = "keyword", type = FieldType.Keyword)
+                }
+        )
         private String name;
 
         @Field(type = FieldType.Keyword)
@@ -63,7 +66,12 @@ public class PostDocument {
     public static class TagEmbed {
         private Long id;
 
-        @Field(type = FieldType.Keyword)
+        @MultiField(
+                mainField = @Field(type = FieldType.Text, analyzer = "standard"),
+                otherFields = {
+                        @InnerField(suffix = "keyword", type = FieldType.Keyword)
+                }
+        )
         private String name;
 
         @Field(type = FieldType.Keyword)

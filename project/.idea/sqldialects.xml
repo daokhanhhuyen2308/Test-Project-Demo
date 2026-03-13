@@ -5,10 +5,16 @@
     <file url="file://$PROJECT_DIR$/identity/src/main/resources/db/migration/V2__create_outbox_event.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/identity/src/main/resources/db/migration/V3__update_type_keycloak_id.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/notification/src/main/java/com/august/notification/repository/ProcessedEventRepository.java" dialect="MySQL" />
-    <file url="file://$PROJECT_DIR$/notification/src/main/resources/db/V1_init_notification_schema.sql" dialect="MySQL" />
-    <file url="file://$PROJECT_DIR$/post/src/main/resources/db/migration/V1__init_post_schema.sql" dialect="TSQL" />
-    <file url="file://$PROJECT_DIR$/post/src/main/resources/db/migration/V2__update_author_keycloak_id.sql" dialect="TSQL" />
+    <file url="file://$PROJECT_DIR$/notification/src/main/resources/db/V1__init_notification_schema.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/post/src/main/resources/db/migration/V1__init_post_shema.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/post/src/main/resources/db/migration/V2__create_index_category_and_tag.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/post/src/main/resources/db/migration/V3__add_favorite_column.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/profile/src/main/java/com/august/profile/repository/UserFollowRepository.java" dialect="GenericSQL" />
+    <file url="file://$PROJECT_DIR$/profile/src/main/java/com/august/profile/repository/UserProfileRepository.java" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/profile/src/main/resources/db/migration/V1__init_profile_schema.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/profile/src/main/resources/db/migration/V2__update_type_profile_id.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/profile/src/main/resources/db/migration/V4__add_follow_table.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/profile/src/main/resources/db/migration/V5__add_index_created_at.sql" dialect="MySQL" />
+    <file url="file://$PROJECT_DIR$/profile/src/main/resources/db/migration/V6__update_profile_id.sql" dialect="MySQL" />
   </component>
 </project>

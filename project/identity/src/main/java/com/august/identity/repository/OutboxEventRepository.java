@@ -17,16 +17,18 @@ public interface OutboxEventRepository extends JpaRepository<OutboxEvent, String
 
     @Modifying
     @Query("update OutboxEvent o set o.outboxStatus = :status, " +
-            "o.processedAt = :processed_at, " +
-            "o.lastError = :lastError " +
+            "o.processedAt = :processedAt, " +
+            "o.lastError = :lastError, " +
+            "o.retryCount = :newRetry " +
             "where o.id = :id")
     void updateStatusWithProcessedAt(@Param("id") String id, @Param("status") OutboxStatus status,
-                                     @Param("processed_at") Instant processedAt,
-                                     @Param("lastError") String lastError);
+                                     @Param("processedAt") Instant processedAt,
+                                     @Param("lastError") String lastError,
+                                     @Param("newRetry") Integer newRetry);
 
-    @Query("select o from OutboxEvent o where o.outboxStatus = :status " +
-            "and o.createdAt <= :timeLimit order by o.createdAt asc")
-    List<OutboxEvent> findAllPendingOlderThan(@Param("status") OutboxStatus status,
-                                              @Param("timeLimit") Instant timeLimit,
-                                              Pageable pageable);
+    @Query("select o from OutboxEvent o where o.outboxStatus in :listStatus " +
+            "and o.createdAt <= :timeLimit and o.retryCount <= 5 order by o.createdAt asc")
+    List<OutboxEvent> findEventsToRetry(@Param("timeLimit") Instant timeLimit,
+                                        @Param("listStatus") List<OutboxStatus> listStatus,
+                                        Pageable pageable);
 }

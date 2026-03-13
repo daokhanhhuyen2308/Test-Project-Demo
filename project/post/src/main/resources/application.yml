@@ -1,0 +1,67 @@
+spring:
+  application:
+    name: post
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/daokhanhhuyen
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+
+  datasource:
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/post?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  elasticsearch:
+    connection-timeout: 5s
+    socket-timeout: 5s
+    uris: http://localhost:9200
+
+  data:
+    redis:
+      repositories:
+        enabled: false
+      host: localhost
+      port: 6379
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+logging:
+  level:
+    sql: error
+    org.hibernate.orm.connections.pooling: OFF
+    org:
+      springframework:
+        security: DEBUG
+        boot:
+          context:
+            config: DEBUG
+
+server:
+  port: 8084
+
+
+KEY:
+  COMMENT:
+    COUNT: POST_COMMENT_COUNT
+  VIEW:
+    COUNT: POST_VIEW_COUNT
+
+grpc:
+  client:
+    file-service-grpc:
+      address: static://localhost:9000
+      negotiation-type: PLAINTEXT

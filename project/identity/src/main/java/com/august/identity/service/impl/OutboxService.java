@@ -15,7 +15,7 @@ public class OutboxService {
     private final OutboxEventRepository outboxEventRepository;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void updateOutboxStatus(String outboxId, OutboxStatus status, String lastError) {
-        outboxEventRepository.updateStatusWithProcessedAt(outboxId, status, Instant.now(), lastError);
+    public void updateOutboxStatus(String outboxId, OutboxStatus status, String lastError, Integer newRetry) {
+        outboxEventRepository.updateStatusWithProcessedAt(outboxId, status, Instant.now(), lastError, newRetry);
     }
 }

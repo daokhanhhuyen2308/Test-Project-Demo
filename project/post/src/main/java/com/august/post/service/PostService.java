@@ -14,11 +14,13 @@ import java.util.List;
 public interface PostService {
     ApiResponse<PostResponse> createPost(PostCreationRequest request);
 
-    ApiResponse<PageResponse<PostResponse>> searchPosts(PostPaginationFilter filter) throws IOException;
+    PageResponse<PostResponse> searchPosts(PostPaginationFilter filter) throws IOException;
 
     ApiResponse<PostResponse> getPostBySlug(String slug);
 
     List<PostResponse> getRelatedPosts(Long postId);
 
     PostResponse uploadThumbnail(Long postId, MultipartFile thumbnail);
+
+    PostResponse toggleFavorite(Long postId);
 }

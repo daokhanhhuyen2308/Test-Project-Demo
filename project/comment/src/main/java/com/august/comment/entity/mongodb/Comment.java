@@ -18,7 +18,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Document(collection = "comments")
-@CompoundIndex(name = "index_post_slug_created_at", def = "{'postSlug: 1', 'createdAt: -1'}")
+@CompoundIndex(name = "index_post_slug_created_at", def = "{'postId': 1, 'createdAt': -1}")
 public class Comment {
     @Id
     private String id;
@@ -29,8 +29,8 @@ public class Comment {
     private String authorUsername;
     @Field(name = "author_avatar_url")
     private String authorAvatarUrl;
+    @Indexed
     private Long postId;
-    private String postSlug;
     @Indexed
     private String parentCommentId;
     @CreatedDate

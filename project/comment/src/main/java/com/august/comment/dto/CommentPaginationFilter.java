@@ -1,10 +1,8 @@
 package com.august.comment.dto;
 
+import com.august.sharecore.dto.SearchAfterCursor;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
@@ -14,6 +12,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@Setter
 public class CommentPaginationFilter {
     @Builder.Default
     private int page = 1;
@@ -26,7 +25,7 @@ public class CommentPaginationFilter {
     private LocalDate fromDate;
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate toDate;
-    private Object[] searchAfter;
+    private SearchAfterCursor searchAfter;
     public int getPage() {
         return Math.max(0, page - 1);
     }

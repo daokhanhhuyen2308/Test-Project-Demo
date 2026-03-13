@@ -1,7 +1,7 @@
 package com.august.profile.grpc;
 
 import com.august.profile.dto.ProfileResponse;
-import com.august.profile.service.ProfileService;
+import com.august.profile.service.UserProfileService;
 import com.august.protocol.profile.CreateProfileRequest;
 import com.august.protocol.profile.CreateProfileResponse;
 import com.august.protocol.profile.ProfileServiceGrpc;
@@ -13,12 +13,12 @@ import net.devh.boot.grpc.server.service.GrpcService;
 @RequiredArgsConstructor
 public class ProfileGrpcServiceImpl extends ProfileServiceGrpc.ProfileServiceImplBase {
 
-    private final ProfileService profileService;
+    private final UserProfileService userProfileService;
 
     @Override
     public void createProfile(CreateProfileRequest request, StreamObserver<CreateProfileResponse> responseObserver) {
 
-        ProfileResponse response = profileService.createProfile(request);
+        ProfileResponse response = userProfileService.createProfile(request);
 
         CreateProfileResponse profileResponse = CreateProfileResponse.newBuilder()
                 .setProfileId(response.getProfileId())

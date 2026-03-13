@@ -1,6 +1,6 @@
 package com.august.profile.consumer;
 
-import com.august.profile.service.ProfileService;
+import com.august.profile.service.UserProfileService;
 import com.august.sharecore.events.UserRegisteredEvent;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 public class ProfileConsumer {
 
-    private final ProfileService profileService;
+    private final UserProfileService userProfileService;
     private final ObjectMapper objectMapper;
 
     @KafkaListener(topics = "user-registered-v2", groupId = "profile-group")
@@ -24,7 +24,7 @@ public class ProfileConsumer {
 
             UserRegisteredEvent event = objectMapper.readValue(message, UserRegisteredEvent.class);
 
-            profileService.createProfileForUserRegistered(event);
+            userProfileService.createProfileForUserRegistered(event);
 
             ack.acknowledge();
         } catch (Exception e) {

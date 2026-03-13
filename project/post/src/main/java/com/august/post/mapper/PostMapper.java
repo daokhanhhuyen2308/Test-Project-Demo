@@ -31,6 +31,8 @@ public interface PostMapper {
     @Mapping(target = "tags", ignore = true)
     @Mapping(target = "slug", ignore = true)
     @Mapping(target = "isDeleted", ignore = true)
+    @Mapping(target = "favoriteCount", ignore = true)
+    @Mapping(target = "isFavorited", ignore = true)
     PostEntity mapToPostEntity(PostCreationRequest request);
 
     //entity -> response
@@ -40,7 +42,7 @@ public interface PostMapper {
                 @Mapping(source = "authorAvatarUrl", target = "author.authorAvatarUrl"),
                 @Mapping(source = "tags", target = "tags", qualifiedByName = "mapToTagsResponse"),
                 @Mapping(source = "category", target = "category", qualifiedByName = "mapToCategoryResponse"),
-                @Mapping(target = "createdAt", ignore = true),
+                @Mapping(target = "createdAt", ignore = true)
     })
     PostResponse mapToPostResponse(PostEntity entity);
 
@@ -59,6 +61,8 @@ public interface PostMapper {
             @Mapping(source = "author.authorUsername", target = "author.authorUsername"),
             @Mapping(source = "author.authorAvatarUrl", target = "author.authorAvatarUrl"),
             @Mapping(target = "createdAt", ignore = true),
+            @Mapping(target = "favoriteCount", ignore = true),
+            @Mapping(target = "isFavorited", ignore = true)
     })
     PostResponse mapDocToResponse(PostDocument document);
 

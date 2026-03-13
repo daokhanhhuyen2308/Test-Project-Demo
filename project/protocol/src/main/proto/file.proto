@@ -32,19 +32,8 @@ message UploadFileResponse {
   UploadStatus status = 4;
 }
 
-message DeleteFileRequest {
-  string file_id = 1;
-}
-
-message DeleteFileResponse {
-  bool success = 1;
-}
-
-
 service FileService{
   rpc UploadFile (UploadFileRequest) returns (UploadFileResponse);
-
-  rpc DeleteFile (DeleteFileRequest) returns (DeleteFileResponse);
 }
 
 

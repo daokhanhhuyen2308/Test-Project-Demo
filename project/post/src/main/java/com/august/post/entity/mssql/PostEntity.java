@@ -72,4 +72,13 @@ public class PostEntity {
     @Column(name = "is_deleted")
     private Boolean isDeleted = false;
 
+    @Column(name = "favorite_count")
+    @Builder.Default
+    private Long favoriteCount = 0L;
+
+    @Transient
+    @Builder.Default
+    @Column(name = "is_favorited")
+    private Boolean isFavorited = false;
+
 }

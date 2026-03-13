@@ -13,5 +13,9 @@ public interface ProfileMapper {
     UserProfile mapToProfileEntity(CreateProfileRequest request);
 
     @Mapping(source = "id", target = "profileId")
+    @Mapping(target = "followerCount", ignore = true)
+    @Mapping(target = "followingCount", ignore = true)
+    @Mapping(target = "isFollowing", ignore = true)
+    @Mapping(target = "isMe", ignore = true)
     ProfileResponse mapToResponse(UserProfile userProfile);
 }

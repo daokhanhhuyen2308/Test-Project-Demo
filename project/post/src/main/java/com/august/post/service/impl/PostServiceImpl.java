@@ -10,6 +10,7 @@ import com.august.protocol.file.UploadFileRequest;
 import com.august.protocol.file.UploadFileResponse;
 import com.august.sharecore.dto.ApiResponse;
 import com.august.sharecore.dto.PageResponse;
+import com.august.sharecore.dto.SearchAfterCursor;
 import com.august.sharecore.enums.ErrorCode;
 import com.august.sharecore.exception.AppCustomException;
 import com.august.sharecore.strategy.time.TimeUnitStrategy;
@@ -39,8 +40,12 @@ import org.springframework.data.elasticsearch.client.elc.NativeQuery;
 import org.springframework.data.elasticsearch.core.ElasticsearchOperations;
 import org.springframework.data.elasticsearch.core.SearchHit;
 import org.springframework.data.elasticsearch.core.SearchHits;
+import org.springframework.data.elasticsearch.core.document.Document;
+import org.springframework.data.elasticsearch.core.mapping.IndexCoordinates;
+import org.springframework.data.elasticsearch.core.query.UpdateQuery;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -67,8 +72,10 @@ public class PostServiceImpl implements PostService {
     private final SecurityUtils securityUtils;
     @GrpcClient("file-service-grpc")
     private FileServiceGrpc.FileServiceBlockingStub fileStub;
+    private static final String FAVORITE_KEY_PREFIX = "POST:FAVORITE:";
 
     @Override
+    @Transactional
     public ApiResponse<PostResponse> createPost(PostCreationRequest request) {
         System.out.println("Service implement");
 
@@ -103,7 +110,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
-    public ApiResponse<PageResponse<PostResponse>> searchPosts(PostPaginationFilter query) {
+    public PageResponse<PostResponse> searchPosts(PostPaginationFilter query) {
 
         Query esQuery = Query.of(q -> q.bool(b -> {
 
@@ -117,6 +124,17 @@ public class PostServiceImpl implements PostService {
                         .fuzziness("AUTO")
                         .prefixLength(1)
                         .minimumShouldMatch("1")));
+            }
+
+            // Category filter (Isolation logic)
+            if (StringUtils.hasText(query.getCategory())) {
+                b.must(m -> m.term(t -> t.field("category.name.keyword")
+                        .value(query.getCategory())));
+            }
+
+            if (StringUtils.hasText(query.getTag())) {
+                b.must(m -> m.term(t -> t.field("tags.name.keyword")
+                        .value(query.getTag())));
             }
 
             //Author filter
@@ -148,11 +166,16 @@ public class PostServiceImpl implements PostService {
 
         NativeQuery nativeQuery = NativeQuery.builder()
                 .withQuery(esQuery)
-                .withPageable(PageRequest.of(query.getPage(), query.getSize()))
+                .withPageable(PageRequest.of(query.getPage(), query.getSize() + 1))
                 .withSort(Sort.by(direction, "createdAt"
                 ).and(Sort.by(Sort.Direction.ASC, "id")))
                 .build();
 
+
+        //    Object[] searchAfter = new Object[] {
+        //    cursor.getLastSortValue(), // Ví dụ: 2026-03-12T15:00:00 (LocalDateTime)
+        //    cursor.getLastId()         // Ví dụ: "comment-666"
+        //};
         if (query.getSearchAfter() != null && query.getSearchAfter().length > 0){
             nativeQuery.setSearchAfter(List.of(query.getSearchAfter()));
         }
@@ -160,10 +183,15 @@ public class PostServiceImpl implements PostService {
         //execute query based on keyword
         SearchHits<PostDocument> searchHits = elasticsearchOperations.search(nativeQuery, PostDocument.class);
 
-        Object[] nextSearchAfter = null;
-        if (searchHits.hasSearchHits()){
-            SearchHit<PostDocument> lastHit = searchHits.getSearchHit(searchHits.getSearchHits().size() - 1);
-            nextSearchAfter = lastHit.getSortValues().toArray();
+        List<SearchHit<PostDocument>> searchHitList = searchHits.getSearchHits();
+
+        boolean hasMore = searchHitList.size() > query.getSize();
+
+        SearchAfterCursor nextSearchAfter = null;
+        if (!searchHitList.isEmpty()){
+            SearchHit<PostDocument> lastHit = searchHitList.getLast();
+            nextSearchAfter = new SearchAfterCursor()
+                    .parseObjectToSearchAfterObject(lastHit.getSortValues().toArray(), LocalDateTime.class);
         }
         List<PostResponse> content = searchHits.stream()
                 .map(hit -> {
@@ -173,20 +201,13 @@ public class PostServiceImpl implements PostService {
                 })
                 .toList();
 
-        ApiResponse<PageResponse<PostResponse>> apiResponse = new ApiResponse<>();
-
-        PageResponse<PostResponse> pageResponse = PageResponse.<PostResponse>builder()
+        return PageResponse.<PostResponse>builder()
                 .content(content)
                 .pageSize(query.getSize())
                 .totalElements(searchHits.getTotalHits())
                 .nextSearchAfter(nextSearchAfter)
+                .hasMore(hasMore)
                 .build();
-
-        apiResponse.setResult(pageResponse);
-        apiResponse.setCode(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getCode());
-        apiResponse.setMessage(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getMessage());
-        apiResponse.setStatus(200);
-        return apiResponse;
     }
 
     @Override
@@ -223,13 +244,14 @@ public class PostServiceImpl implements PostService {
                 .toList();
     }
 
+    @Transactional
     @Override
     public PostResponse uploadThumbnail(Long postId, MultipartFile thumbnail) {
         try {
             AuthCurrentUser currentUser = securityUtils.getCurrentUser();
 
             PostEntity postEntity = postRepository.findById(postId)
-                    .orElseThrow(() -> new AppCustomException(ErrorCode.POST_NOT_FOUND_BY_ID));
+                    .orElseThrow(() -> new AppCustomException(ErrorCode.POST_NOT_FOUND_BY_ID, postId));
 
             if (!postEntity.getAuthorKeycloakId().equals(currentUser.getKeycloakId())) {
                 log.warn("User {} tried to update thumbnail of post {} owned by {}",
@@ -258,6 +280,46 @@ public class PostServiceImpl implements PostService {
         }
     }
 
+    @Override
+    @Transactional
+    public PostResponse toggleFavorite(Long postId) {
+
+        AuthCurrentUser currentUser = securityUtils.getCurrentUser();
+
+        String userKeycloakId = currentUser.getKeycloakId();
+        String redisKey = FAVORITE_KEY_PREFIX + postId;
+        boolean isFavorited;
+
+        //check
+        Boolean isMember = stringRedisTemplate.opsForSet().isMember(redisKey, userKeycloakId);
+
+        if (Boolean.TRUE.equals(isMember)){
+            stringRedisTemplate.opsForSet().remove(redisKey, userKeycloakId);
+            log.info("User {} unfavorited post {}", userKeycloakId, postId);
+            isFavorited = false;
+        }
+        else{
+            stringRedisTemplate.opsForSet().add(redisKey, userKeycloakId);
+            log.info("User {} favorited post {}", userKeycloakId, postId);
+            isFavorited = true;
+        }
+
+        //update favorite count
+        Long currentCount = stringRedisTemplate.opsForSet().size(redisKey);
+        long countValue = (currentCount != null) ? currentCount : 0;
+
+        PostEntity postEntity = postRepository.findById(postId)
+                .orElseThrow(() -> new AppCustomException(ErrorCode.POST_NOT_FOUND_BY_ID));
+        postEntity.setFavoriteCount(currentCount);
+        updateFavoriteCountElasticSearch(postId, countValue);
+
+        PostResponse response = postMapper.mapToPostResponse(postEntity);
+        response.setIsFavorited(isFavorited);
+        response.setCreatedAt(timeUnitStrategy.processTimeUnitStrategy(postEntity.getCreatedAt()));
+
+        return response;
+    }
+
     private int calculateReadingTime(String content){
         if (content == null || content.isEmpty()) return 0;
         String[] words = content.trim().split("\\s+");
@@ -279,14 +341,22 @@ public class PostServiceImpl implements PostService {
     }
 
     private ApiResponse<PostResponse> mapToPostResponse(PostEntity entity){
-        ApiResponse<PostResponse> response = new ApiResponse<>();
         PostResponse postResponse = postMapper.mapToPostResponse(entity);
         postResponse.setCreatedAt(timeUnitStrategy.processTimeUnitStrategy(entity.getCreatedAt()));
-        response.setResult(postResponse);
-        response.setCode(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getCode());
-        response.setCode(ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getMessage());
-        response.setStatus(200);
-        return response;
+        return ApiResponse.success(postResponse, ErrorCode.DATA_RESPONSE_SUCCESSFULLY.getMessage());
+    }
+
+    private void updateFavoriteCountElasticSearch(Long postId, Long countValue){
+
+        UpdateQuery updateQuery = UpdateQuery.builder(postId.toString())
+                .withDocument(Document.create().append("favoriteCount", countValue))
+                .build();
+        try{
+            elasticsearchOperations.update(updateQuery, IndexCoordinates.of("post_index"));
+        } catch (Exception e) {
+            log.error("Failed to update ES for post {}: {}", postId, e.getMessage());
+        }
+
     }
 
 }

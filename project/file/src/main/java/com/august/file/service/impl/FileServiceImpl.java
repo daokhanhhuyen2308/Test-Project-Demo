@@ -1,7 +1,7 @@
 package com.august.file.service.impl;
 
-import com.august.file.dto.requests.FileDownloadDTO;
-import com.august.file.dto.responses.FileResponse;
+import com.august.file.dto.FileDownloadDTO;
+import com.august.file.dto.FileResponse;
 import com.august.file.entity.FileEntity;
 import com.august.file.mapper.FileMapper;
 import com.august.file.mapper.FilePurposeConverter;
@@ -14,6 +14,7 @@ import com.august.protocol.file.UploadFileRequest;
 import com.august.sharecore.enums.ErrorCode;
 import com.august.sharecore.exception.AppCustomException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,6 +33,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class FileServiceImpl implements FileService {
     private final FileRepository fileRepository;
     private final FileMapper fileMapper;
@@ -74,13 +76,16 @@ public class FileServiceImpl implements FileService {
 
     @Override
     public FileDownloadDTO extractFile(String fileId) {
-        FileEntity file = fileRepository.findFileEntityById(fileId);
+        FileEntity file = fileRepository.findById(fileId)
+                .orElseThrow(() -> new AppCustomException(ErrorCode.FILE_NOT_FOUND, fileId));
 
         try{
-            Path path = Paths.get(file.getFilePath());
-            Resource resource = new UrlResource(path.toUri());
+            // uploadDictionary = "uploads"
+            Path rootLocation = Paths.get(uploadDictionary);
+            Path filePath = rootLocation.resolve(file.getFilePath()).normalize();
+            Resource resource = new UrlResource(filePath.toUri());
 
-            if (!resource.exists() && !resource.isReadable()){
+            if (!resource.exists() || !resource.isReadable()){
                 throw new AppCustomException(ErrorCode.UPLOAD_FAILED);
             }
 
@@ -93,10 +98,12 @@ public class FileServiceImpl implements FileService {
             );
 
         } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
+            log.error("Lỗi đường dẫn file: {}", e.getMessage());
+            throw new AppCustomException(ErrorCode.INTERNAL_SERVER_ERROR);
         }
     }
 
+    @Transactional
     @Override
     public FileResponse uploadFileFromGrpc(UploadFileRequest fileRequest) {
 
@@ -129,25 +136,36 @@ public class FileServiceImpl implements FileService {
         Path storedFilePath = targetDirectoryPath.resolve(uniqueFileName).normalize();
 
         try {
+            //Ghi file vật lý vào ổ đĩa
             Files.write(storedFilePath, fileRequest.getFile().toByteArray());
         } catch (Exception exception) {
             throw new RuntimeException("Cannot write file to disk", exception);
         }
 
-        Path destinationFile = rootLocation.resolve(uniqueFileName);
-
         String contentType = fileRequest.getContentType();
 
         boolean isViewable = contentType.startsWith("image/") || contentType.equals("application/pdf");
 
-        FileEntity entity = new FileEntity();
+        String filePath = rootLocation.relativize(storedFilePath).toString().replace('\\', '/');
+
+        FileEntity entity = fileMapper.mapToFileEntity(fileRequest);
         entity.setSize(fileRequest.getFile().size());
-        entity.setFilePath(destinationFile.toString());
+        entity.setFilePath(filePath);
         entity.setFileName(uniqueFileName);
         entity.setContentType(contentType);
         entity.setViewable(isViewable);
-        entity.setOwnerId(fileRequest.getOwnerId());
         entity.setPurpose(FilePurposeConverter.toEntity(fileRequest.getPurpose()));
+
+        System.out.println("Running before saving into file database");
+
+        fileRepository.save(entity);
+
+        FileEntity saved = fileRepository.save(entity);
+        if (saved.getId() != null) {
+            System.out.println(">>> TRỜI ƠI, NÓ LƯU ĐƯỢC RỒI! ID ĐÂY: " + saved.getId());
+        } else {
+            System.out.println(">>> LƯU THẤT BẠI RỒI HUYỀN ƠI, ID VẪN NULL!");
+        }
 
         return fileMapper.mapToResponse(entity);
     }

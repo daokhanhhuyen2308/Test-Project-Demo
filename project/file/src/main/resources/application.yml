@@ -1,0 +1,33 @@
+server:
+  port: 8082
+
+spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:9090/realms/daokhanhhuyen
+          jwk-set-uri: ${spring.security.oauth2.resourceserver.jwt.issuer-uri}/protocol/openid-connect/certs
+
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
+#
+#  data:
+#    mongodb:
+#      uri: mongodb://admin:12345@localhost:27017/file_db?authSource=admin
+
+logging:
+  level:
+    org.mongodb.driver: INFO
+    org.springframework.data.mongodb: DEBUG
+
+
+app:
+  upload:
+    directory: uploads
+
+grpc:
+  server:
+    port: 9000

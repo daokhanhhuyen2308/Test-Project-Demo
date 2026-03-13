@@ -1,0 +1,1 @@
+alter table identity.user_entity modify keycloak_id varchar(100) not null

@@ -18,10 +18,10 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class CommentDocument {
     @Id
-    private String id;
-    private String postId;
     @Field(type = FieldType.Keyword)
-    private String postSlug;
+    private String id;
+    @Field(type = FieldType.Keyword)
+    private String postId;
     private String parentCommentId;
     @Field(type = FieldType.Object)
     private AuthorEmbed author;
@@ -40,8 +40,11 @@ public class CommentDocument {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class AuthorEmbed{
+        @Field(type = FieldType.Keyword)
         private String authorId;
+        @Field(type = FieldType.Keyword)
         private String authorUsername;
+        @Field(type = FieldType.Keyword, index = false)
         private String authorAvatarUrl;
     }
 }

@@ -26,6 +26,7 @@
         <module>notification</module>
         <module>share-core</module>
         <module>search</module>
+        <module>newsfeed</module>
     </modules>
 
     <properties>

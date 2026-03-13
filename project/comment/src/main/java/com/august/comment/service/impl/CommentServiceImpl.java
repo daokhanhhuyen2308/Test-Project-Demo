@@ -1,6 +1,6 @@
 package com.august.comment.service.impl;
 
-import co.elastic.clients.elasticsearch._types.FieldValue;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.json.JsonData;
 import com.august.comment.dto.CommentRequest;
@@ -13,6 +13,7 @@ import com.august.comment.repository.elastic.CommentESRepository;
 import com.august.comment.repository.jpa.CommentRepository;
 import com.august.comment.service.CommentService;
 import com.august.sharecore.dto.PageResponse;
+import com.august.sharecore.dto.SearchAfterCursor;
 import com.august.sharecore.enums.ErrorCode;
 import com.august.sharecore.exception.AppCustomException;
 import com.august.sharecore.strategy.time.TimeUnitStrategy;
@@ -57,6 +58,8 @@ public class CommentServiceImpl implements CommentService {
         comment.setAuthorId(currentUser.getKeycloakId());
         comment.setAuthorUsername(currentUser.getUsername());
         comment.setAuthorAvatarUrl(currentUser.getAvatarUrl());
+        comment.setCreatedAt(LocalDateTime.now());
+        comment.setUpdatedAt(LocalDateTime.now());
         Comment savedComment = commentRepository.save(comment);
 
         String keyCmtCount = KEY_COMMENT_COUNT + "_" + request.getPostId();
@@ -81,74 +84,101 @@ public class CommentServiceImpl implements CommentService {
             throw new AppCustomException(ErrorCode.INPUT_REQUIREMENT);
         }
 
-        Query query = Query.of(q -> q.bool(b -> {
-            b.must(m -> m.term(t -> t.field("parentCommentId")
-                    .value(FieldValue.of(filter.getParentCmtId()))));
-
-            if (filter.getFromDate() != null || filter.getToDate() != null){
-                LocalDateTime from = filter.getFromDate() != null
-                        ? filter.getFromDate().atStartOfDay()
-                        : null;
-
-                LocalDateTime to = filter.getToDate() != null
-                        ? filter.getToDate().atTime(LocalTime.MAX)
-                        : null;
-
-                b.must(m -> m.range(r -> r.field("createdAt")
-                        .gte(filter.getFromDate() != null ? JsonData.of(from) : null)
-                        .lte(filter.getToDate() != null ? JsonData.of(to) : null)));
-            }
-            return b;
-        }));
+        Query query = buildBaseCommentQuery(filter, null);
 
         return processNativeQuery(query, filter, false);
     }
 
     @Override
-    public PageResponse<CommentResponse> getAllCommentsBySlug(CommentPaginationFilter filter, String slug) {
+    public PageResponse<CommentResponse> getAllCommentsByPostId(CommentPaginationFilter filter, Long postId) {
 
-        if (slug == null || slug.isBlank()){
-            throw new AppCustomException(ErrorCode.SLUG_IS_REQUIRED);
-        }
-
-        Query query = Query.of(q -> q
-                .bool(b -> b
-                        .must(m -> m
-                                .term(t -> t
-                                        .field("postSlug").value(FieldValue.of(slug))))
-                        .mustNot(mn -> mn.exists(e -> e.field("parentCommentId")))));
+        Query query = buildBaseCommentQuery(filter, postId);
 
         return processNativeQuery(query, filter, true);
     }
 
+    private void validateParentCommentId(CommentPaginationFilter filter, BoolQuery.Builder b) {
+        if (filter.getParentCmtId() != null && !filter.getParentCmtId().isBlank()) {
+            b.must(m -> m
+                    .term(t -> t.field("parentCommentId").value(String.valueOf(filter.getParentCmtId())))
+            );
+        } else {
+            b.mustNot(mn -> mn.exists(e -> e.field("parentCommentId")));
+        }
+    }
+
+    private Query buildBaseCommentQuery(CommentPaginationFilter filter, Long postId) {
+        return Query.of(q -> q.bool(b -> {
+
+            System.out.println("Here 1");
+
+            if (postId != null) {
+                b.must(m -> m.term(t -> t.field("postId").value(String.valueOf(postId))));
+            }
+
+            System.out.println("Here 2");
+
+            validateParentCommentId(filter, b);
+
+            System.out.println("Here 3");
+
+            if (filter.getFromDate() != null || filter.getToDate() != null) {
+                b.must(m -> m.range(r -> {
+                    r.field("createdAt");
+                    if (filter.getFromDate() != null) {
+                        System.out.println("Here 4");
+                        r.gte(JsonData.of(filter.getFromDate().atStartOfDay()));
+                    }
+                    if (filter.getToDate() != null) {
+                        System.out.println("Here 5");
+                        r.lte(JsonData.of(filter.getToDate().atTime(LocalTime.MAX)));
+                    }
+                    return r;
+                }));
+            }
+
+            return b;
+        }));
+
+    }
+
     private PageResponse<CommentResponse> processNativeQuery(Query query, CommentPaginationFilter filter,
-                                                             Boolean isSlug){
+                                                             Boolean isPostId){
         Sort.Direction direction = filter.isSortDesc() ? Sort.Direction.DESC : Sort.Direction.ASC;
 
         NativeQuery nativeQuery =  NativeQuery.builder()
                 .withQuery(query)
-                .withPageable(PageRequest.of(filter.getPage(), filter.getSize())
-                        .withSort(Sort.by(direction, "createdAd")
+                .withPageable(PageRequest.of(filter.getPage(), filter.getSize() + 1)
+                        .withSort(Sort.by(direction, "createdAt")
                                 .and(Sort.by(Sort.Direction.ASC, "id"))))
                 .build();
 
-        if (filter.getSearchAfter() != null && filter.getSearchAfter().length > 0){
-            nativeQuery.setSearchAfter(List.of(filter.getSearchAfter()));
+        if (filter.getSearchAfter() != null){
+            Object[] rawValues = new Object[] {
+                    filter.getSearchAfter().getLastCreatedAt(),
+                    filter.getSearchAfter().getLastId()};
+            nativeQuery.setSearchAfter(List.of(rawValues));
         }
 
         SearchHits<CommentDocument> searchHits = elasticsearchOperations.search(nativeQuery, CommentDocument.class);
 
-        Object[] nextCursor = null;
-        if (searchHits.hasSearchHits()){
-            SearchHit<CommentDocument> hit = searchHits.getSearchHit(searchHits.getSearchHits().size() - 1);
-            nextCursor = hit.getSortValues().toArray();
+        List<SearchHit<CommentDocument>> searchHitList = searchHits.getSearchHits();
+
+        boolean hasMore = searchHitList.size() > filter.getSize();
+
+        SearchAfterCursor nextCursor = null;
+        if (!searchHitList.isEmpty()) {
+            SearchHit<CommentDocument> lastHit = searchHitList.getLast();
+            nextCursor = new SearchAfterCursor()
+                    .parseObjectToSearchAfterObject(lastHit.getSortValues().toArray(), LocalDateTime.class);
         }
 
         List<CommentResponse> content = searchHits.getSearchHits()
                 .stream()
+                .limit(filter.getSize())
                 .map(SearchHit::getContent)
                 .map(hit -> {
-                    if (isSlug){
+                    if (isPostId){
                         CommentResponse response = commentMapper.mapDocToResponse(hit);
                         response.setReplies(null);
                         response.setCreatedAt(timeUnitStrategy.processTimeUnitStrategy(hit.getCreatedAt()));
@@ -164,6 +194,7 @@ public class CommentServiceImpl implements CommentService {
                 .pageSize(filter.getSize())
                 .totalElements(searchHits.getTotalHits())
                 .nextSearchAfter(nextCursor)
+                .hasMore(hasMore)
                 .build();
     }
 }

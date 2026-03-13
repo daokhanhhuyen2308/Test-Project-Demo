@@ -14,7 +14,6 @@ import java.util.List;
 public class CommentResponse {
     private String id;
     private String postId;
-    private String postSlug;
     private String content;
     private AuthorResponse author;
     private String parentCommentId;

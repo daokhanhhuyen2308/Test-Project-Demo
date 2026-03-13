@@ -11,15 +11,20 @@ import java.time.Instant;
 @AllArgsConstructor
 @NoArgsConstructor
 @Entity
-@Table(name = "process_event")
+@Table(name = "processed_event")
 public class ProcessedEvent {
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "event_id")
     private String eventId;
     @Enumerated(value = EnumType.STRING)
     private EventStatus status;
     private int attempts;
+    @Column(name = "last_error")
     private String lastError;
+    @Column(name = "updated_at")
     private Instant updatedAt;
-
+    @Column(name = "next_retry_at")
+    private Instant nextRetryAt;
+    @Column(columnDefinition = "LONGTEXT")
+    private String payload;
 }
